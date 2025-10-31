@@ -40,7 +40,17 @@ export class CacheService implements ICacheService {
 
   async reset(): Promise<void> {
     try {
-      await this.cacheManager.reset();
+      const store: any = (this.cacheManager as any).store;
+      if (store.reset) {
+        await store.reset();
+      } else if (store.clear) {
+        await store.clear();
+      } else if (store.flushall) {
+        await store.flushall();
+      } else {
+        this.logger.warn('Cache reset not supported for this store');
+        return;
+      }
       this.logger.debug('Cache RESET: all keys cleared');
     } catch (error) {
       this.logger.error('Cache RESET error', error);
@@ -49,7 +59,7 @@ export class CacheService implements ICacheService {
 
   async keys(pattern: string): Promise<string[]> {
     try {
-      const store: any = this.cacheManager.store;
+      const store: any = (this.cacheManager as any).store;
       if (store.keys) {
         const keys = await store.keys(pattern);
         this.logger.debug(`Cache KEYS: ${pattern} - found ${keys.length}`);

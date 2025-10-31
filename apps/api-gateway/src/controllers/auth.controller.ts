@@ -16,9 +16,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { firstValueFrom } from 'rxjs';
-import { MessagePattern as MP, ApiResponseDto } from '@app/common';
-import { Public, CurrentUser } from '../decorators';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { MessagePattern as MP, ApiResponseDto, Public } from '@app/common';
 
 @ApiTags('Authentication')
 @Controller('auth')

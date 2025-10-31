@@ -10,8 +10,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
-import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
-import { MessagePattern as MP } from '@app/common';
+import { IS_PUBLIC_KEY, MessagePattern as MP } from '@app/common';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -50,7 +49,7 @@ export class JwtAuthGuard implements CanActivate {
       );
 
       request['user'] = user;
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Invalid token');
     }
 

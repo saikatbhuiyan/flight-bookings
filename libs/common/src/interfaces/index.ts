@@ -1,3 +1,6 @@
+import { Request } from 'express';
+import { Role } from '../enums';
+
 // Base Entity Interface
 export interface IBaseEntity {
   id: string;
@@ -155,4 +158,43 @@ export enum EventPattern {
 
   PAYMENT_COMPLETED = 'payment.completed',
   PAYMENT_FAILED = 'payment.failed',
+}
+
+export interface ActiveUserData {
+  /**
+   * The "subject" of the token. The value of this property is the user ID
+   * that granted this token.
+   **/
+  sub: number;
+
+  /**
+   *  The subject's (user) email.
+   **/
+  email: string;
+
+  /**
+   *  The subject's (user) role.
+   **/
+  role?: Role[];
+}
+
+export interface RefreshTokenPayload {
+  /**
+   * The "subject" of the token. The value of this property is the user ID
+   * that granted this token.
+   **/
+  sub: number;
+
+  /**
+   *  The subject's (user) email.
+   **/
+  email: string;
+
+  refreshTokenId: string;
+
+  deviceId: string;
+}
+
+export interface AuthenticatedRequest extends Request {
+  user: ActiveUserData;
 }

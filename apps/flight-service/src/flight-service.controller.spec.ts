@@ -11,7 +11,9 @@ describe('FlightServiceController', () => {
       providers: [FlightServiceService],
     }).compile();
 
-    flightServiceController = app.get<FlightServiceController>(FlightServiceController);
+    flightServiceController = app.get<FlightServiceController>(
+      FlightServiceController,
+    );
   });
 
   describe('root', () => {
