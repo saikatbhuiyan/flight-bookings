@@ -18,3 +18,13 @@ export enum Role {
   USER = 'user',
   AGENT = 'agent',
 }
+
+export enum AuthType {
+  Bearer,
+  None,
+}
+
+export enum ClientType {
+  WEB = 'web',
+  MOBILE = 'mobile',
+}

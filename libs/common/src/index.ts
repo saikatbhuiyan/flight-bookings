@@ -18,3 +18,4 @@ export * from './storage.provider';
 export * from './types';
 export * from './utils/price.util';
 export * from './dto';
+export * from './guards';
