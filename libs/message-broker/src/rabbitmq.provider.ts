@@ -66,9 +66,9 @@ export class RabbitMQProvider implements IMessageBroker, OnModuleDestroy {
   async publish(pattern: string, data: any): Promise<void> {
     try {
       await this.channelWrapper.publish(this.exchange, pattern, data, {
-        persistent: true,
+        deliveryMode: 2,
         timestamp: Date.now(),
-      });
+      } as any);
       this.logger.debug(`Published message to ${pattern}`);
     } catch (error) {
       this.logger.error(`Failed to publish message to ${pattern}`, error);
