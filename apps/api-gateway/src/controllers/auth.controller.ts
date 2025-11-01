@@ -16,7 +16,13 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { firstValueFrom } from 'rxjs';
-import { MessagePattern as MP, ApiResponseDto, Public } from '@app/common';
+import {
+  MessagePattern as MP,
+  ApiResponseDto,
+  Public,
+  CurrentUser,
+} from '@app/common';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -64,7 +70,7 @@ export class AuthController {
   @Get('me')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user profile' })
-  async getProfile(@CurrentUser() user: any) {
+  getProfile(@CurrentUser() user: any) {
     return ApiResponseDto.success(user, 'Profile retrieved successfully');
   }
 }

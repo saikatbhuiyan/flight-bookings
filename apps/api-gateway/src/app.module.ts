@@ -7,8 +7,8 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthController } from './controllers/auth.controller';
-import { FlightController } from './controllers/flight.controller';
-import { BookingController } from './controllers/booking.controller';
+// import { FlightController } from './controllers/flight.controller';
+// import { BookingController } from './controllers/booking.controller';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 
@@ -23,7 +23,7 @@ import { RolesGuard } from './guards/roles.guard';
       useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_ACCESS_SECRET'),
         signOptions: {
-          expiresIn: configService.get<string>('JWT_ACCESS_EXPIRATION'),
+          expiresIn: configService.get<string>('JWT_ACCESS_EXPIRATION') as any,
         },
       }),
       inject: [ConfigService],
@@ -96,7 +96,7 @@ import { RolesGuard } from './guards/roles.guard';
       },
     ]),
   ],
-  controllers: [AuthController, FlightController, BookingController],
+  controllers: [AuthController],
   providers: [
     {
       provide: APP_GUARD,
