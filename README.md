@@ -1,98 +1,364 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Flight Booking Microservices System
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A production-grade, scalable microservices architecture for flight booking built with NestJS, RabbitMQ, PostgreSQL, Redis, and AWS S3.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 🏗️ Architecture
 
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
-
-```bash
-$ npm install
+```
+┌─────────────────┐
+│   API Gateway   │ ← HTTP/REST Entry Point
+└────────┬────────┘
+         │
+    ┌────┴────┐
+    │ RabbitMQ│ ← Message Broker
+    └────┬────┘
+         │
+    ┌────┴─────────────────────────┐
+    │                              │
+┌───▼────┐  ┌────────┐  ┌─────────▼┐  ┌──────────────┐
+│  Auth  │  │ Flight │  │  Booking │  │Notification  │
+│Service │  │Service │  │  Service │  │   Service    │
+└───┬────┘  └───┬────┘  └────┬─────┘  └──────────────┘
+    │           │             │
+    └───────┬───┴─────────────┘
+            │
+    ┌───────▼────────┐
+    │   PostgreSQL   │
+    └────────────────┘
+            │
+    ┌───────▼────────┐
+    │     Redis      │ ← Caching Layer
+    └────────────────┘
+            │
+    ┌───────▼────────┐
+    │   S3/LocalStack│ ← File Storage
+    └────────────────┘
 ```
 
-## Compile and run the project
+## 🚀 Features
 
+### Core Features
+- ✅ **Microservices Architecture** with RabbitMQ for async communication
+- ✅ **API Gateway** with centralized routing and authentication
+- ✅ **JWT Authentication** with access and refresh tokens
+- ✅ **Role-Based Access Control** (RBAC)
+- ✅ **PostgreSQL** with TypeORM for data persistence
+- ✅ **Redis** for caching and session management
+- ✅ **S3-compatible storage** (AWS S3/LocalStack) with abstraction
+- ✅ **Event-driven notifications** system
+- ✅ **Request rate limiting** and throttling
+- ✅ **Input validation** and sanitization
+- ✅ **Error handling** and logging
+- ✅ **Swagger API documentation**
+- ✅ **Docker & Docker Compose** setup
+- ✅ **Dependency Inversion** for easy provider switching
+
+### Services
+
+#### 1. API Gateway (Port 3000)
+- HTTP REST API entry point
+- JWT authentication and authorization
+- Request routing to microservices
+- Rate limiting and throttling
+- Swagger documentation at `/api/docs`
+
+#### 2. Auth Service (Port 3001)
+- User registration and authentication
+- JWT token generation and validation
+- Password hashing with bcrypt
+- Refresh token mechanism
+- User profile management
+
+#### 3. Flight Service (Port 3002)
+- Flight CRUD operations
+- Flight search with filters
+- Seat availability management
+- Flight image upload to S3
+- Price management by class
+
+#### 4. Booking Service (Port 3003)
+- Booking creation and management
+- Payment integration (simulated)
+- Booking cancellation
+- User booking history
+- Event emission for notifications
+
+#### 5. Notification Service (Port 3004)
+- Email notifications
+- SMS notifications (simulated)
+- Event-driven architecture
+- Booking confirmation emails
+- Cancellation notifications
+
+## 📋 Prerequisites
+
+- Node.js >= 18.x
+- Docker & Docker Compose
+- npm or yarn
+
+## 🛠️ Installation
+
+### 1. Clone the repository
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+git clone <repository-url>
+cd flight-booking
 ```
 
-## Run tests
-
+### 2. Install dependencies
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm install
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
+### 3. Environment setup
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+cp .env.example .env
+# Edit .env with your configuration
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### 4. Start infrastructure services
+```bash
+docker-compose up -d postgres redis rabbitmq localstack
+```
 
-## Resources
+### 5. Create S3 bucket in LocalStack
+```bash
+npm run setup:localstack
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+### 6. Start all microservices
+```bash
+# Option 1: Start all services concurrently
+npm run start:all
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+# Option 2: Start services individually
+npm run start:api-gateway
+npm run start:auth
+npm run start:flight
+npm run start:booking
+npm run start:notification
+```
 
-## Support
+## 🐳 Docker Deployment
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+### Start all services with Docker Compose
+```bash
+docker-compose up --build
+```
 
-## Stay in touch
+### Stop all services
+```bash
+docker-compose down
+```
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+### View logs
+```bash
+docker-compose logs -f [service-name]
+```
 
-## License
+## 📚 API Documentation
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Once the API Gateway is running, access Swagger documentation at:
+```
+http://localhost:3000/api/docs
+```
+
+### Authentication Endpoints
+```
+POST /api/v1/auth/register    - Register new user
+POST /api/v1/auth/login       - Login user
+POST /api/v1/auth/refresh     - Refresh access token
+GET  /api/v1/auth/me          - Get current user profile
+```
+
+### Flight Endpoints
+```
+GET    /api/v1/flights              - List all flights
+GET    /api/v1/flights/search       - Search flights
+GET    /api/v1/flights/:id          - Get flight by ID
+POST   /api/v1/flights              - Create flight (Admin)
+PUT    /api/v1/flights/:id          - Update flight (Admin)
+DELETE /api/v1/flights/:id          - Delete flight (Admin)
+POST   /api/v1/flights/:id/image    - Upload flight image (Admin)
+```
+
+### Booking Endpoints
+```
+GET  /api/v1/bookings              - List all bookings (Admin)
+GET  /api/v1/bookings/my-bookings  - Get user bookings
+GET  /api/v1/bookings/:id          - Get booking by ID
+POST /api/v1/bookings              - Create booking
+PUT  /api/v1/bookings/:id/cancel   - Cancel booking
+```
+
+## 🔐 Security Features
+
+1. **JWT Authentication**
+   - Access tokens (15 minutes)
+   - Refresh tokens (7 days)
+   - Token blacklisting with Redis
+
+2. **Password Security**
+   - Bcrypt hashing (10 rounds)
+   - Password complexity requirements
+   - Secure password storage
+
+3. **Rate Limiting**
+   - 10 requests per minute per IP
+   - Configurable throttle settings
+
+4. **Input Validation**
+   - Class-validator for DTO validation
+   - Whitelist and sanitization
+   - Type transformation
+
+5. **CORS & Helmet**
+   - Cross-origin resource sharing
+   - Security headers
+   - XSS protection
+
+## 🔄 Dependency Inversion Examples
+
+### Switching Storage Provider
+
+The storage module uses dependency inversion, making it easy to switch providers:
+
+```typescript
+// Using S3
+StorageModule.forRoot({
+  useClass: S3StorageProvider,
+});
+
+// Switching to Google Cloud Storage
+StorageModule.forRoot({
+  useClass: GCSStorageProvider,
+});
+
+// Using custom provider
+StorageModule.forRoot({
+  useFactory: () => new CustomStorageProvider(),
+});
+```
+
+### Switching Message Broker
+
+Similarly, you can switch from RabbitMQ to any other message broker:
+
+```typescript
+// Using RabbitMQ
+MessageBrokerModule.forRoot({
+  useClass: RabbitMQProvider,
+});
+
+// Switching to Apache Kafka
+MessageBrokerModule.forRoot({
+  useClass: KafkaProvider,
+});
+```
+
+## 🧪 Testing
+
+```bash
+# Unit tests
+npm run test
+
+# E2E tests
+npm run test:e2e
+
+# Test coverage
+npm run test:cov
+```
+
+## 📊 Database Migrations
+
+```bash
+# Generate migration
+npm run migration:generate -- -n MigrationName
+
+# Run migrations
+npm run migration:run
+
+# Revert migration
+npm run migration:revert
+```
+
+## 🔧 Configuration
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| NODE_ENV | Environment | development |
+| PORT | API Gateway port | 3000 |
+| DB_HOST | PostgreSQL host | localhost |
+| DB_PORT | PostgreSQL port | 5432 |
+| REDIS_HOST | Redis host | localhost |
+| REDIS_PORT | Redis port | 6379 |
+| RABBITMQ_URL | RabbitMQ URL | amqp://admin:admin@localhost:5672 |
+| JWT_ACCESS_SECRET | JWT access secret | (required) |
+| JWT_REFRESH_SECRET | JWT refresh secret | (required) |
+| AWS_REGION | AWS region | us-east-1 |
+| AWS_S3_BUCKET | S3 bucket name | flight-booking-bucket |
+
+## 🏗️ Project Structure
+
+```
+flight-booking/
+├── apps/
+│   ├── api-gateway/          # HTTP Gateway
+│   ├── auth-service/         # Authentication
+│   ├── flight-service/       # Flight management
+│   ├── booking-service/      # Booking management
+│   └── notification-service/ # Notifications
+├── libs/
+│   ├── common/              # Shared interfaces & DTOs
+│   ├── database/            # Database configuration
+│   ├── message-broker/      # RabbitMQ abstraction
+│   └── storage/             # S3 abstraction
+├── docker-compose.yml       # Docker orchestration
+├── .env                     # Environment variables
+└── package.json            # Dependencies
+```
+
+## 🚦 Service Health Checks
+
+Each service exposes health check endpoints:
+
+```
+GET /health
+```
+
+## 📈 Monitoring & Logging
+
+- Structured logging with Winston
+- Request/Response logging
+- Error tracking
+- Performance monitoring
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+## 📝 License
+
+This project is licensed under the MIT License.
+
+## 👥 Support
+
+For support, email support@flightbooking.com or open an issue in the repository.
+
+## 🎯 Roadmap
+
+- [ ] Payment gateway integration (Stripe/PayPal)
+- [ ] Real-time seat selection
+- [ ] Flight tracking
+- [ ] Multi-currency support
+- [ ] Email templates with SendGrid
+- [ ] SMS integration with Twilio
+- [ ] Admin dashboard
+- [ ] Analytics and reporting
+- [ ] Kubernetes deployment
+- [ ] CI/CD pipeline
