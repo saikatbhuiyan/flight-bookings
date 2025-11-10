@@ -1,5 +1,5 @@
+import { ClientType } from '@app/common';
 import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
-import { ClientType } from '../enums/cient-type.enum';
 
 export class RefreshTokenDto {
   @IsNotEmpty()

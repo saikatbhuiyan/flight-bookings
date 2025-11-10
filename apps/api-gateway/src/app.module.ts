@@ -11,6 +11,7 @@ import { AuthController } from './controllers/auth.controller';
 // import { BookingController } from './controllers/booking.controller';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
+import { CookieService } from '@app/common';
 
 @Module({
   imports: [
@@ -98,6 +99,7 @@ import { RolesGuard } from './guards/roles.guard';
   ],
   controllers: [AuthController],
   providers: [
+    CookieService,
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

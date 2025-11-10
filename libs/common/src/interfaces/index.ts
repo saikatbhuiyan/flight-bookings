@@ -116,6 +116,7 @@ export enum MessagePattern {
   // Auth patterns
   AUTH_REGISTER = 'auth.register',
   AUTH_LOGIN = 'auth.login',
+  AUTH_SIGNOUT = 'auth.signout',
   AUTH_VALIDATE = 'auth.validate',
   AUTH_REFRESH = 'auth.refresh',
 

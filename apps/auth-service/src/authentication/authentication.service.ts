@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { HashingService } from '../hashing/hashing.service';
@@ -8,9 +12,7 @@ import { randomUUID } from 'crypto';
 import { RefreshTokenIdsStorage } from './refresh-token-ids.storage';
 import { RefreshTokenBlacklist } from './refresh-token-black-list.storage';
 import { AuthAuditService } from './auth-audit.service';
-import { SignInDto } from './dto/sign-in.dto';
-import { SignOutDto } from './dto/sign-out.dto';
-import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { SignInDto, SignOutDto, RefreshTokenDto, SignUpDto } from '@app/common';
 import { Role, InvalidateRefreshTokenError } from '@app/common';
 import { User } from '@app/database';
 
@@ -26,6 +28,30 @@ export class AuthenticationService {
     private readonly refreshTokenBlacklist: RefreshTokenBlacklist,
     private readonly auditService: AuthAuditService,
   ) {}
+
+  async register(registerDto: SignUpDto) {
+    const existingUser = await this.usersRepository.findOne({
+      where: { email: registerDto.email },
+    });
+
+    console.log('Existing user check:', existingUser);
+
+    if (existingUser) {
+      throw new ConflictException('User with this email already exists');
+    }
+
+    const user = this.usersRepository.create(registerDto);
+    user.password = await this.hashingService.hash(registerDto.password);
+    await this.usersRepository.save(user);
+    console.log('New user created with ID:', user.id);
+
+    return {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+    };
+  }
 
   /**
    * Sign in user with password validation

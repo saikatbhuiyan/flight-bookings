@@ -7,10 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
-import {
-  ActiveUserData,
-  AuthenticatedRequest,
-} from 'src/modules/auth/interface/active-user-data-interface';
+import { ActiveUserData, AuthenticatedRequest } from '../interfaces';
 
 @Injectable()
 export class AccessTokenGuard implements CanActivate {

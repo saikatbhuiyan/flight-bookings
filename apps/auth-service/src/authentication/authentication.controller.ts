@@ -1,123 +1,126 @@
+// import { Controller, Logger } from '@nestjs/common';
+// import {
+//   Ctx,
+//   MessagePattern,
+//   Payload,
+//   RmqContext,
+// } from '@nestjs/microservices';
+// import { AuthenticationService } from './authentication.service';
+// import { SignInDto, SignOutDto, RefreshTokenDto, SignUpDto } from '@app/common';
+// import { MessagePattern as MP } from '@app/common';
+
+// @Controller()
+// export class AuthMessageController {
+//   private readonly logger = new Logger(AuthMessageController.name);
+
+//   constructor(private readonly authService: AuthenticationService) {}
+
+//   @MessagePattern(MP.AUTH_REGISTER)
+//   async register(@Payload() data: SignUpDto, @Ctx() context: RmqContext) {
+//     return this.handleMessage(context, async () => {
+//       this.logger.debug('Registering user:', data.email);
+//       return this.authService.register(data);
+//     });
+//   }
+
+//   @MessagePattern(MP.AUTH_LOGIN)
+//   async login(@Payload() data: SignInDto, @Ctx() context: RmqContext) {
+//     return this.handleMessage(context, async () => {
+//       return this.authService.signIn(data);
+//     });
+//   }
+
+//   @MessagePattern(MP.AUTH_REFRESH)
+//   async refresh(@Payload() data: RefreshTokenDto, @Ctx() context: RmqContext) {
+//     return this.handleMessage(context, async () => {
+//       return this.authService.refreshTokens(data);
+//     });
+//   }
+
+//   @MessagePattern(MP.AUTH_SIGNOUT)
+//   async signOut(@Payload() data: SignOutDto, @Ctx() context: RmqContext) {
+//     return this.handleMessage(context, async () => {
+//       return this.authService.signOut(data);
+//     });
+//   }
+
+//   /**
+//    * ✅ Centralized handler for safe message ack/nack
+//    */
+//   private async handleMessage<T>(
+//     context: RmqContext,
+//     callback: () => Promise<T>,
+//   ): Promise<T> {
+//     const channel = context.getChannelRef();
+//     const originalMsg = context.getMessage();
+
+//     try {
+//       const result = await callback();
+//       channel.ack(originalMsg); // ✅ Mark as successfully processed
+//       return result;
+//     } catch (error) {
+//       this.logger.error('Error handling message:', error);
+
+//       // 👇 Option 1: Acknowledge anyway to prevent infinite retry
+//       channel.ack(originalMsg);
+
+//       // 👇 Option 2: Requeue for retry (use sparingly)
+//       // channel.nack(originalMsg, false, true);
+
+//       throw error;
+//     }
+//   }
+// }
+
+import { Controller, Logger } from '@nestjs/common';
 import {
-  Controller,
-  Post,
-  Res,
-  Body,
-  HttpCode,
-  HttpStatus,
-  Req,
-  UnauthorizedException,
-  UseGuards,
-} from '@nestjs/common';
+  Ctx,
+  MessagePattern,
+  Payload,
+  RmqContext,
+} from '@nestjs/microservices';
 import { AuthenticationService } from './authentication.service';
-import { SignInDto } from './dto/sign-in.dto';
-import { SignOutDto } from './dto/sign-out.dto';
-import { RefreshTokenDto } from './dto/refresh-token.dto';
-import type { Request, Response } from 'express';
 import {
-  RateLimitGuard,
-  CookieService,
-  Public,
-  RateLimit,
-  ClientType,
+  MessagePattern as MP,
+  RefreshTokenDto,
+  RmqHelper,
+  SignInDto,
+  SignOutDto,
+  SignUpDto,
 } from '@app/common';
 
-@UseGuards(RateLimitGuard)
-@Controller('authentication')
-export class AuthenticationController {
-  constructor(
-    private readonly authService: AuthenticationService,
-    private readonly cookieService: CookieService,
-  ) {}
+@Controller()
+export class AuthMessageController {
+  private readonly logger = new Logger(AuthMessageController.name);
 
-  @Public()
-  @Post('sign-in')
-  @HttpCode(HttpStatus.OK)
-  @RateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100,
-    message: 'Too many attempts, try again later',
-  })
-  async signIn(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-    @Body() signInDto: SignInDto,
-  ) {
-    const { deviceId, clientType = ClientType.WEB } = signInDto;
-    const ip = req.ip;
+  constructor(private readonly authService: AuthenticationService) {}
 
-    const { accessToken, refreshToken } = await this.authService.signIn(
-      signInDto,
-      ip,
-    );
-
-    if (clientType === ClientType.WEB) {
-      this.cookieService.setAccessToken(res, accessToken, deviceId);
-      this.cookieService.setRefreshToken(res, refreshToken, deviceId);
-      return { message: 'Sign-in successful' };
-    }
-
-    return {
-      accessToken,
-      refreshToken,
-      deviceId,
-      message: 'Sign-in successful',
-    };
+  @MessagePattern(MP.AUTH_REGISTER)
+  async register(@Payload() data: SignUpDto, @Ctx() context: RmqContext) {
+    return RmqHelper.handleAck(context, async () => {
+      this.logger.debug(`Registering ${data.email}`);
+      return this.authService.register(data);
+    });
   }
 
-  @Post('refresh-token')
-  @HttpCode(HttpStatus.OK)
-  async refreshTokens(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-    @Body() refreshTokenDto: RefreshTokenDto,
-  ) {
-    const { deviceId, clientType = ClientType.WEB } = refreshTokenDto;
-
-    const refreshToken =
-      clientType === ClientType.WEB
-        ? (req.cookies[`refreshToken_${deviceId}`] as string)
-        : refreshTokenDto.refreshToken;
-
-    if (!refreshToken) {
-      throw new UnauthorizedException('Refresh token missing');
-    }
-
-    const { accessToken, refreshToken: newRefreshToken } =
-      await this.authService.refreshTokens({ refreshToken, deviceId });
-
-    if (clientType === ClientType.WEB) {
-      this.cookieService.setAccessToken(res, accessToken, deviceId);
-      this.cookieService.setRefreshToken(res, newRefreshToken, deviceId);
-      return { message: 'Tokens refreshed successfully' };
-    }
-
-    return {
-      accessToken,
-      refreshToken: newRefreshToken,
-      deviceId,
-      message: 'Tokens refreshed successfully',
-    };
+  @MessagePattern(MP.AUTH_LOGIN)
+  login(@Payload() data: SignInDto, @Ctx() context: RmqContext) {
+    return RmqHelper.handleAck(context, async () => {
+      return this.authService.signIn(data);
+    });
   }
 
-  @Post('sign-out')
-  @HttpCode(HttpStatus.OK)
-  @RateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 5,
-    message: 'Too many attempts, try again later',
-  })
-  async signOut(
-    @Res({ passthrough: true }) res: Response,
-    @Body() signOutDto: SignOutDto,
-  ) {
-    const { deviceId, clientType = ClientType.WEB } = signOutDto;
+  @MessagePattern(MP.AUTH_REFRESH)
+  async refresh(@Payload() data: RefreshTokenDto, @Ctx() context: RmqContext) {
+    return RmqHelper.handleAck(context, async () => {
+      return this.authService.refreshTokens(data);
+    });
+  }
 
-    if (clientType === ClientType.WEB) {
-      this.cookieService.clearAuthCookies(res, deviceId);
-    }
-
-    await this.authService.signOut(signOutDto);
-    return { message: 'Signed out successfully' };
+  @MessagePattern(MP.AUTH_SIGNOUT)
+  signOut(@Payload() data: SignOutDto, @Ctx() context: RmqContext) {
+    return RmqHelper.handleAck(context, async () => {
+      return this.authService.signOut(data);
+    });
   }
 }

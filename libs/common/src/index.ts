@@ -16,6 +16,7 @@ export * from './redis/redis.service';
 export * from './services';
 export * from './storage.provider';
 export * from './types';
-export * from './utils/price.util';
+export * from './utils';
 export * from './dto';
 export * from './guards';
+export * from './rmq/rmq.module';

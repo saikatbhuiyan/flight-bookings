@@ -27,4 +27,6 @@ export enum AuthType {
 export enum ClientType {
   WEB = 'web',
   MOBILE = 'mobile',
+  DESKTOP = 'desktop',
+  API = 'api', // for machine-to-machine use
 }

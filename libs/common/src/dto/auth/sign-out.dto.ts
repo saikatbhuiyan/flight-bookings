@@ -5,8 +5,7 @@ import {
   IsPositive,
   IsString,
 } from 'class-validator';
-import { ClientType } from '../enums/cient-type.enum';
-
+import { ClientType } from '@app/common';
 export class SignOutDto {
   @IsNumber()
   @IsPositive()
