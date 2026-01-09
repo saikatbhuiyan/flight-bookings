@@ -11,7 +11,14 @@ import { AuthController } from './controllers/auth.controller';
 // import { BookingController } from './controllers/booking.controller';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
-import { CookieService } from '@app/common';
+import {
+  CookieService,
+  RedisModule,
+  RabbitMQHealthIndicator,
+  RedisHealthIndicator,
+} from '@app/common';
+import { TerminusModule } from '@nestjs/terminus';
+import { GatewayHealthController } from './controllers/health.controller';
 
 @Module({
   imports: [
@@ -19,6 +26,7 @@ import { CookieService } from '@app/common';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    RedisModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
@@ -96,10 +104,13 @@ import { CookieService } from '@app/common';
         inject: [ConfigService],
       },
     ]),
+    TerminusModule,
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, GatewayHealthController],
   providers: [
     CookieService,
+    RabbitMQHealthIndicator,
+    RedisHealthIndicator,
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
@@ -110,4 +121,4 @@ import { CookieService } from '@app/common';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }

@@ -20,6 +20,7 @@ import {
   CookieService,
   RedisModule,
   RolesGuard,
+  HealthModule,
 } from '@app/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MessageBrokerModule } from '@app/message-broker';
@@ -52,6 +53,7 @@ import { AuthMessageController } from './authentication/authentication.controlle
     }),
     MessageBrokerModule.forRoot(),
     RedisModule,
+    HealthModule,
   ],
   providers: [
     {
@@ -76,4 +78,4 @@ import { AuthMessageController } from './authentication/authentication.controlle
   ],
   controllers: [AuthMessageController],
 })
-export class AuthServiceModule {}
+export class AuthServiceModule { }

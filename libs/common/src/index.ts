@@ -1,4 +1,7 @@
 export * from './common.module';
+export * from './health/health.module';
+export * from './health/indicators/rabbitmq.health';
+export * from './health/indicators/redis.health';
 export * from './constants';
 export * from './decorators';
 export * from './enums';

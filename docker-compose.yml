@@ -102,6 +102,7 @@ services:
     environment:
       NODE_ENV: development
       PORT: 3001
+      DB_NAME: auth_db
     depends_on:
       - postgres
       - redis
@@ -122,6 +123,7 @@ services:
     environment:
       NODE_ENV: development
       PORT: 3002
+      DB_NAME: flight_db
     depends_on:
       - postgres
       - redis
@@ -143,6 +145,7 @@ services:
     environment:
       NODE_ENV: development
       PORT: 3003
+      DB_NAME: booking_db
     depends_on:
       - postgres
       - redis
@@ -163,7 +166,9 @@ services:
     environment:
       NODE_ENV: development
       PORT: 3004
+      DB_NAME: notification_db
     depends_on:
+      - postgres
       - rabbitmq
     networks:
       - flight-booking-network

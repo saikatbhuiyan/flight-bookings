@@ -1,5 +1,5 @@
 import { Entity, Column, Index } from 'typeorm';
-import { BaseEntity } from '@app/common/entities/base.entity';
+import { AbstractEntity } from '@app/database';
 
 export enum FlightStatus {
   SCHEDULED = 'scheduled',
@@ -19,7 +19,7 @@ export enum FlightClass {
 @Entity('flights')
 @Index(['flightNumber'], { unique: true })
 @Index(['departureAirport', 'arrivalAirport', 'departureTime'])
-export class Flight extends BaseEntity {
+export class Flight extends AbstractEntity {
   @Column({ name: 'flight_number', unique: true })
   flightNumber: string;
 

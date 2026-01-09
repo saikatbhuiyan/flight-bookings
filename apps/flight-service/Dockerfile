@@ -6,6 +6,7 @@ WORKDIR /app
 # Install dependencies
 COPY package*.json ./
 COPY tsconfig*.json ./
+COPY nest-cli.json ./
 
 RUN npm ci --only=production && npm cache clean --force
 
@@ -25,11 +26,14 @@ FROM base AS build
 WORKDIR /app
 
 COPY package*.json ./
+COPY tsconfig*.json ./
+COPY nest-cli.json ./
 RUN npm ci
 
 COPY . .
 
-RUN npx nest build api-gateway
+# Build specific app
+RUN npx nest build flight-service
 
 # Production stage
 FROM node:20-alpine AS production
@@ -44,6 +48,6 @@ COPY --from=build /app/package*.json ./
 
 USER node
 
-EXPOSE 3000
+EXPOSE 3002
 
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/apps/flight-service/main.js"]

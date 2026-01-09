@@ -2,11 +2,11 @@ import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { FlightModule } from './flight.module';
+import { FlightServiceModule } from './flight-service.module';
 
 async function bootstrap() {
   const logger = new Logger('FlightService');
-  const app = await NestFactory.create(FlightModule);
+  const app = await NestFactory.create(FlightServiceModule);
   const configService = app.get(ConfigService);
 
   const rabbitmqUrl = configService.get<string>('RABBITMQ_URL');

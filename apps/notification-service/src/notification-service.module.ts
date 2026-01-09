@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { NotificationService } from './notification.service';
+import { DatabaseModule } from '@app/database';
+import { HealthModule } from '@app/common';
+import { NotificationService } from './notification-service.service';
 import { MessageBrokerModule } from '@app/message-broker';
 
 @Module({
@@ -9,8 +11,10 @@ import { MessageBrokerModule } from '@app/message-broker';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    DatabaseModule.forRoot([]),
     MessageBrokerModule.forRoot(),
+    HealthModule,
   ],
   providers: [NotificationService],
 })
-export class NotificationModule {}
+export class NotificationModule { }

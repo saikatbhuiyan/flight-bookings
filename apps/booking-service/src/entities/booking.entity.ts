@@ -1,5 +1,5 @@
 import { Entity, Column, Index } from 'typeorm';
-import { BaseEntity } from '@app/common/entities/base.entity';
+import { AbstractEntity } from '@app/database';
 
 export enum BookingStatus {
   PENDING = 'pending',
@@ -19,7 +19,7 @@ export enum PaymentStatus {
 @Index(['userId'])
 @Index(['flightId'])
 @Index(['bookingReference'], { unique: true })
-export class Booking extends BaseEntity {
+export class Booking extends AbstractEntity {
   @Column({ name: 'booking_reference', unique: true })
   bookingReference: string;
 
