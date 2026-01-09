@@ -36,7 +36,7 @@ async function bootstrap() {
   await app.startAllMicroservices();
   logger.log(`Auth Service is running and listening to queue: ${queue}`);
 
-  const port = configService.get<number>('PORT') || 3000;
+  const port = configService.get<number>('PORT') || 3001;
   await app.listen(port);
   logger.log(`Auth Service HTTP server is running on port: ${port}`);
 }

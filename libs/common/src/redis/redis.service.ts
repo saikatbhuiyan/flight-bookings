@@ -8,9 +8,9 @@ export class RedisService implements OnApplicationShutdown {
 
   constructor(private readonly configService: ConfigService) {
     this.client = new Redis({
-      host: this.configService.get<string>('redis.host', '127.0.0.1'),
-      port: this.configService.get<number>('redis.port'),
-      password: this.configService.get<string>('redis.password'),
+      host: this.configService.get<string>('REDIS_HOST') || this.configService.get<string>('redis.host', '127.0.0.1'),
+      port: this.configService.get<number>('REDIS_PORT') || this.configService.get<number>('redis.port', 6379),
+      password: this.configService.get<string>('REDIS_PASSWORD') || this.configService.get<string>('redis.password'),
     });
   }
 

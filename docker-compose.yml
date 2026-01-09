@@ -80,17 +80,13 @@ services:
     container_name: flight-booking-api-gateway
     ports:
       - '3000:3000'
-    environment:
-      NODE_ENV: development
-      PORT: 3000
+    env_file:
+      - ./apps/api-gateway/.env
     depends_on:
       - redis
       - rabbitmq
     networks:
       - flight-booking-network
-    volumes:
-      - .:/app
-      - /app/node_modules
 
   auth-service:
     build:
@@ -99,19 +95,14 @@ services:
     container_name: flight-booking-auth-service
     ports:
       - '3001:3001'
-    environment:
-      NODE_ENV: development
-      PORT: 3001
-      DB_NAME: auth_db
+    env_file:
+      - ./apps/auth-service/.env
     depends_on:
       - postgres
       - redis
       - rabbitmq
     networks:
       - flight-booking-network
-    volumes:
-      - .:/app
-      - /app/node_modules
 
   flight-service:
     build:
@@ -120,10 +111,8 @@ services:
     container_name: flight-booking-flight-service
     ports:
       - '3002:3002'
-    environment:
-      NODE_ENV: development
-      PORT: 3002
-      DB_NAME: flight_db
+    env_file:
+      - ./apps/flight-service/.env
     depends_on:
       - postgres
       - redis
@@ -131,9 +120,6 @@ services:
       - localstack
     networks:
       - flight-booking-network
-    volumes:
-      - .:/app
-      - /app/node_modules
 
   booking-service:
     build:
@@ -142,19 +128,14 @@ services:
     container_name: flight-booking-booking-service
     ports:
       - '3003:3003'
-    environment:
-      NODE_ENV: development
-      PORT: 3003
-      DB_NAME: booking_db
+    env_file:
+      - ./apps/booking-service/.env
     depends_on:
       - postgres
       - redis
       - rabbitmq
     networks:
       - flight-booking-network
-    volumes:
-      - .:/app
-      - /app/node_modules
 
   notification-service:
     build:
@@ -163,18 +144,13 @@ services:
     container_name: flight-booking-notification-service
     ports:
       - '3004:3004'
-    environment:
-      NODE_ENV: development
-      PORT: 3004
-      DB_NAME: notification_db
+    env_file:
+      - ./apps/notification-service/.env
     depends_on:
       - postgres
       - rabbitmq
     networks:
       - flight-booking-network
-    volumes:
-      - .:/app
-      - /app/node_modules
 
 networks:
   flight-booking-network:

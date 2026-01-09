@@ -55,7 +55,7 @@ async function bootstrap() {
     }),
   );
 
-  const port = 3001;
+  const port = configService.get<number>('PORT') || 3000;
   await app.listen(port);
 
   logger.log(`🚀 API Gateway is running on: http://localhost:${port}`);
