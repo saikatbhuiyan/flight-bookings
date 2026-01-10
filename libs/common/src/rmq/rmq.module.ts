@@ -14,7 +14,23 @@ export class RmqSetup {
     maxRetries = 3,
   ) {
     const rabbitmqUrl = configService.get<string>('RABBITMQ_URL');
-    const connection = await connect(rabbitmqUrl);
+
+    let connection;
+    let retries = 0;
+    while (retries < maxRetries) {
+      try {
+        connection = await connect(rabbitmqUrl);
+        break;
+      } catch (err) {
+        retries++;
+        this.logger.warn(
+          `Failed to connect to RabbitMQ (${retries}/${maxRetries}). Retrying in ${retryDelayMs / 1000}s...`,
+        );
+        if (retries >= maxRetries) throw err;
+        await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+      }
+    }
+
     const channel = await connection.createChannel();
 
     const mainQueue = `${serviceName}_queue`;

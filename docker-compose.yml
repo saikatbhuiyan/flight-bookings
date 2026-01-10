@@ -61,14 +61,14 @@ services:
     environment:
       SERVICES: s3
       DEBUG: 1
-      DATA_DIR: /tmp/localstack/data
+      DOCKER_HOST: unix:///var/run/docker.sock
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
       AWS_DEFAULT_REGION: us-east-1
     ports:
       - '4566:4566'
     volumes:
-      - localstack_data:/tmp/localstack
+      - localstack_data:/var/lib/localstack
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - flight-booking-network
@@ -83,8 +83,10 @@ services:
     env_file:
       - ./apps/api-gateway/.env
     depends_on:
-      - redis
-      - rabbitmq
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     networks:
       - flight-booking-network
 
@@ -98,9 +100,12 @@ services:
     env_file:
       - ./apps/auth-service/.env
     depends_on:
-      - postgres
-      - redis
-      - rabbitmq
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     networks:
       - flight-booking-network
 
@@ -114,10 +119,14 @@ services:
     env_file:
       - ./apps/flight-service/.env
     depends_on:
-      - postgres
-      - redis
-      - rabbitmq
-      - localstack
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      localstack:
+        condition: service_started
     networks:
       - flight-booking-network
 
@@ -131,9 +140,12 @@ services:
     env_file:
       - ./apps/booking-service/.env
     depends_on:
-      - postgres
-      - redis
-      - rabbitmq
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     networks:
       - flight-booking-network
 
@@ -147,8 +159,10 @@ services:
     env_file:
       - ./apps/notification-service/.env
     depends_on:
-      - postgres
-      - rabbitmq
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     networks:
       - flight-booking-network
 

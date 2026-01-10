@@ -20,11 +20,19 @@ async function bootstrap() {
     options: {
       urls: [rabbitmqUrl],
       queue: queue,
-      queueOptions: { durable: true },
+      queueOptions: {
+        durable: true,
+        arguments: {
+          'x-dead-letter-exchange': '',
+          'x-dead-letter-routing-key': `${queue}_retry`,
+          'x-max-length': 10000,
+        },
+      },
       prefetchCount: 1,
       noAck: false, // manual ack pattern
     },
   });
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
