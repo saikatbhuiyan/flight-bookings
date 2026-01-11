@@ -4,8 +4,9 @@ import {
     MemoryHealthIndicator,
     HealthCheck,
 } from '@nestjs/terminus';
-import { RabbitMQHealthIndicator, RedisHealthIndicator } from '@app/common';
+import { Public, RabbitMQHealthIndicator, RedisHealthIndicator } from '@app/common';
 
+@Public()
 @Controller('health')
 export class GatewayHealthController {
     constructor(

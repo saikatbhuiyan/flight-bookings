@@ -77,9 +77,15 @@ services:
     build:
       context: .
       dockerfile: ./apps/api-gateway/Dockerfile
+      target: development
     container_name: flight-booking-api-gateway
+    command: npm run start:api-gateway
     ports:
       - '3000:3000'
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/dist
     env_file:
       - ./apps/api-gateway/.env
     depends_on:
@@ -94,9 +100,15 @@ services:
     build:
       context: .
       dockerfile: ./apps/auth-service/Dockerfile
+      target: development
     container_name: flight-booking-auth-service
+    command: npm run start:auth
     ports:
       - '3001:3001'
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/dist
     env_file:
       - ./apps/auth-service/.env
     depends_on:
@@ -113,9 +125,15 @@ services:
     build:
       context: .
       dockerfile: ./apps/flight-service/Dockerfile
+      target: development
     container_name: flight-booking-flight-service
+    command: npm run start:flight
     ports:
       - '3002:3002'
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/dist
     env_file:
       - ./apps/flight-service/.env
     depends_on:
@@ -134,9 +152,15 @@ services:
     build:
       context: .
       dockerfile: ./apps/booking-service/Dockerfile
+      target: development
     container_name: flight-booking-booking-service
+    command: npm run start:booking
     ports:
       - '3003:3003'
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/dist
     env_file:
       - ./apps/booking-service/.env
     depends_on:
@@ -153,9 +177,15 @@ services:
     build:
       context: .
       dockerfile: ./apps/notification-service/Dockerfile
+      target: development
     container_name: flight-booking-notification-service
+    command: npm run start:notification
     ports:
       - '3004:3004'
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/dist
     env_file:
       - ./apps/notification-service/.env
     depends_on:

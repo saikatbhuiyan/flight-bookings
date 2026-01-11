@@ -93,7 +93,7 @@ import {
 export class AuthMessageController {
   private readonly logger = new Logger(AuthMessageController.name);
 
-  constructor(private readonly authService: AuthenticationService) {}
+  constructor(private readonly authService: AuthenticationService) { }
 
   @MessagePattern(MP.AUTH_REGISTER)
   async register(@Payload() data: SignUpDto, @Ctx() context: RmqContext) {
@@ -106,6 +106,7 @@ export class AuthMessageController {
   @MessagePattern(MP.AUTH_LOGIN)
   login(@Payload() data: SignInDto, @Ctx() context: RmqContext) {
     return RmqHelper.handleAck(context, async () => {
+      this.logger.debug(`Logging in ${data.email}`);
       return this.authService.signIn(data);
     });
   }

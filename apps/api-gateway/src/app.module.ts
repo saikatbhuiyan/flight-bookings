@@ -68,6 +68,11 @@ import { GatewayHealthController } from './controllers/health.controller';
             queue: 'auth_queue',
             queueOptions: {
               durable: true,
+              arguments: {
+                'x-dead-letter-exchange': '',
+                'x-dead-letter-routing-key': 'auth_queue_retry',
+                'x-max-length': 10000,
+              },
             },
           },
         }),
