@@ -5,7 +5,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthController } from './controllers/auth.controller';
 // import { FlightController } from './controllers/flight.controller';
 // import { BookingController } from './controllers/booking.controller';
@@ -14,9 +14,14 @@ import { RolesGuard } from './guards/roles.guard';
 import {
   CookieService,
   RedisModule,
+  CommonModule,
   RabbitMQHealthIndicator,
   RedisHealthIndicator,
+  GlobalExceptionFilter,
+  winstonLoggerConfig,
+  LoggingInterceptor,
 } from '@app/common';
+import { WinstonModule } from 'nest-winston';
 import { TerminusModule } from '@nestjs/terminus';
 import { GatewayHealthController } from './controllers/health.controller';
 
@@ -27,6 +32,7 @@ import { GatewayHealthController } from './controllers/health.controller';
       envFilePath: '.env',
     }),
     RedisModule,
+    CommonModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
@@ -109,6 +115,7 @@ import { GatewayHealthController } from './controllers/health.controller';
         inject: [ConfigService],
       },
     ]),
+    WinstonModule.forRoot(winstonLoggerConfig),
     TerminusModule,
   ],
   controllers: [AuthController, GatewayHealthController],
@@ -123,6 +130,14 @@ import { GatewayHealthController } from './controllers/health.controller';
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: LoggingInterceptor,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: GlobalExceptionFilter,
     },
   ],
 })

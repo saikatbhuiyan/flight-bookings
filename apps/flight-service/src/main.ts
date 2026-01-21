@@ -3,6 +3,7 @@ import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { FlightServiceModule } from './flight-service.module';
+import { CommonRpcExceptionFilter } from '@app/common';
 
 async function bootstrap() {
   const logger = new Logger('FlightService');
@@ -32,6 +33,8 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  app.useGlobalFilters(new CommonRpcExceptionFilter());
 
   await app.startAllMicroservices();
   logger.log(`Flight Service is running and listening to queue: ${queue}`);

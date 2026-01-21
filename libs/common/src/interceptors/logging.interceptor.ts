@@ -42,7 +42,9 @@ export class LoggingInterceptor implements NestInterceptor {
     const { method, url, ip } = request;
     const userAgent = request.get('User-Agent') || '';
     const correlationId =
-      (request.headers['x-request-id'] as string) || randomUUID();
+      (request.headers['x-correlation-id'] as string) ||
+      (request as any).correlationId ||
+      randomUUID();
 
     const handlerName = context.getHandler().name;
     const controllerName = context.getClass().name;
@@ -50,6 +52,7 @@ export class LoggingInterceptor implements NestInterceptor {
 
     // Log incoming request
     this.logger.log({
+      message: `[${correlationId}] Incoming Request: ${method} ${url}`,
       event: 'request_received',
       method,
       url,
@@ -73,14 +76,12 @@ export class LoggingInterceptor implements NestInterceptor {
           : 0;
         const responseSize = responseBody
           ? JSON.stringify(
-              this.isDev ? this.sanitize(responseBody) : responseBody,
-            ).length
+            this.isDev ? this.sanitize(responseBody) : responseBody,
+          ).length
           : 0;
 
-        const level =
-          statusCode >= 500 ? 'error' : statusCode >= 400 ? 'warn' : 'info';
-
-        this.logger.log(level, {
+        const message = `[${correlationId}] ${method} ${url} - ${statusCode} (${duration}ms)`;
+        const logData = {
           event: 'response_sent',
           method,
           url,
@@ -91,16 +92,23 @@ export class LoggingInterceptor implements NestInterceptor {
           handler: handlerName,
           requestSize,
           responseSize,
-          responseBody: this.isDev ? this.sanitize(responseBody) : undefined,
           timestamp: new Date().toISOString(),
-        });
+        };
+
+        if (statusCode >= 500) {
+          this.logger.error(message, logData as any);
+        } else if (statusCode >= 400) {
+          this.logger.warn(message, logData as any);
+        } else {
+          this.logger.log(message, logData as any);
+        }
       }),
       catchError((error: HttpException | Error) => {
         const duration = Date.now() - startTime;
         const status = error instanceof HttpException ? error.getStatus() : 500;
-        const level = status >= 500 ? 'error' : status >= 400 ? 'warn' : 'info';
+        const message = `[${correlationId}] ${method} ${url} - ${status} (${duration}ms) - ${error.message}`;
 
-        this.logger.error(level, {
+        const logData = {
           event: 'error',
           method,
           url,
@@ -112,7 +120,13 @@ export class LoggingInterceptor implements NestInterceptor {
           controller: controllerName,
           handler: handlerName,
           timestamp: new Date().toISOString(),
-        });
+        };
+
+        if (status >= 500) {
+          this.logger.error(message, logData as any);
+        } else {
+          this.logger.warn(message, logData as any);
+        }
 
         return throwError(() => error);
       }),

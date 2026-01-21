@@ -4,7 +4,7 @@ import { BcryptService } from './hashing/bcrypt.service';
 import { AuthenticationService } from './authentication/authentication.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { RefreshTokenIdsStorage } from './authentication/refresh-token-ids.storage';
 import { AuthAuditService } from './authentication/auth-audit.service';
 import { RefreshTokenBlacklist } from './authentication/refresh-token-black-list.storage';
@@ -18,20 +18,27 @@ import {
   AccessTokenGuard,
   AuthenticationGuard,
   CookieService,
-  RedisModule,
+  CommonModule,
   RolesGuard,
   HealthModule,
+  GlobalExceptionFilter,
+  winstonLoggerConfig,
+  LoggingInterceptor,
 } from '@app/common';
+import { WinstonModule } from 'nest-winston';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MessageBrokerModule } from '@app/message-broker';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
 import { AuthMessageController } from './authentication/authentication.controller';
 
+import authConfig from './config/auth.config';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      load: [authConfig],
       envFilePath: '.env',
     }),
     DatabaseModule.forRoot([User, AuthAudit, NotificationSettings]),
@@ -52,10 +59,19 @@ import { AuthMessageController } from './authentication/authentication.controlle
       inject: [ConfigService],
     }),
     MessageBrokerModule.forRoot(),
-    RedisModule,
+    CommonModule,
+    WinstonModule.forRoot(winstonLoggerConfig),
     HealthModule,
   ],
   providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: LoggingInterceptor,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: GlobalExceptionFilter,
+    },
     {
       provide: HashingService,
       useClass: BcryptService,
