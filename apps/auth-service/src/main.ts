@@ -3,7 +3,7 @@ import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AuthServiceModule } from './auth-service.module';
-import { RmqSetup } from '@app/common';
+import { RmqSetup, CommonRpcExceptionFilter } from '@app/common';
 
 async function bootstrap() {
   const logger = new Logger('AuthService');
@@ -13,7 +13,10 @@ async function bootstrap() {
   const queue = 'auth_queue';
 
   // Automatically create queues for this service
-  await RmqSetup.setupQueues(configService, 'auth', 10000, 3);
+  await RmqSetup.setupQueues(configService, 'auth', 10000, 1);
+
+  // Global prefix for HTTP routes
+  app.setGlobalPrefix('api/v1');
 
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.RMQ,
@@ -40,6 +43,8 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  app.useGlobalFilters(new CommonRpcExceptionFilter());
 
   await app.startAllMicroservices();
   logger.log(`Auth Service is running and listening to queue: ${queue}`);

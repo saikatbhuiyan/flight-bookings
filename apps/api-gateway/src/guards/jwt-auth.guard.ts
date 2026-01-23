@@ -57,7 +57,23 @@ export class JwtAuthGuard implements CanActivate {
   }
 
   private extractTokenFromHeader(request: any): string | undefined {
+    // 1. Check Authorization Header
     const [type, token] = request.headers.authorization?.split(' ') ?? [];
-    return type === 'Bearer' ? token : undefined;
+    if (type === 'Bearer') {
+      return token;
+    }
+
+    // 2. Check Cookies (for Swagger/Web clients)
+    if (request.cookies) {
+      // Find a cookie that starts with accessToken_
+      const accessTokenKey = Object.keys(request.cookies).find((key) =>
+        key.startsWith('accessToken_'),
+      );
+      if (accessTokenKey) {
+        return request.cookies[accessTokenKey];
+      }
+    }
+
+    return undefined;
   }
 }

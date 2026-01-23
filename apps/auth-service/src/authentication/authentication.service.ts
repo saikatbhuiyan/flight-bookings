@@ -34,16 +34,13 @@ export class AuthenticationService {
       where: { email: registerDto.email },
     });
 
-    console.log('Existing user check:', existingUser);
-
     if (existingUser) {
-      throw new ConflictException('User with this email already exists');
+      throw new ConflictException('User already exists');
     }
 
     const user = this.usersRepository.create(registerDto);
     user.password = await this.hashingService.hash(registerDto.password);
     await this.usersRepository.save(user);
-    console.log('New user created with ID:', user.id);
 
     return {
       id: user.id,
@@ -58,10 +55,10 @@ export class AuthenticationService {
    */
   async signIn(signInDto: SignInDto, ip?: string) {
     const { email, password, deviceId } = signInDto;
-
     const user = await this.usersRepository.findOneBy({ email });
     if (!user) throw new UnauthorizedException('User does not exist');
 
+    console.log('User found:', user);
     // Password validation
     if (user.password) {
       const isValid = await this.hashingService.compare(
@@ -76,7 +73,7 @@ export class AuthenticationService {
 
     const tokens = await this.generateTokens(user, deviceId, ip);
 
-    // await this.auditService.logSignInAttempt(user.id, ip, deviceId, true);
+    await this.auditService.logSignInAttempt(user.id, ip, deviceId, true);
     return tokens;
   }
 
@@ -178,5 +175,26 @@ export class AuthenticationService {
     await this.refreshTokenIdsStorage.invalidate(userId, deviceId);
     // Optional: blacklist the current refresh token to prevent reuse
     await this.refreshTokenBlacklist.blacklistToken(refreshTokenId);
+  }
+
+  /**
+   * Validate user for JWT guard
+   */
+  async validateUser(payload: any) {
+    const user = await this.usersRepository.findOne({
+      where: { id: payload.id, email: payload.email },
+    });
+
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('User is inactive or does not exist');
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      roles: [Role.USER],
+    };
   }
 }

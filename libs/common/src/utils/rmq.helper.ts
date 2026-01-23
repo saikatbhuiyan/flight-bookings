@@ -1,5 +1,5 @@
 import { RmqContext } from '@nestjs/microservices';
-import { Logger } from '@nestjs/common';
+import { Logger, HttpException } from '@nestjs/common';
 
 const logger = new Logger('RmqHelper');
 
@@ -21,17 +21,28 @@ export class RmqHelper {
         return result;
       })
       .catch((error) => {
+        console.log("error", error);
+        const isClientError =
+          error instanceof HttpException &&
+          error.getStatus() >= 400 &&
+          error.getStatus() < 500;
+
+        if (isClientError) {
+          logger.debug(`Ack-ing client error: ${error.message} (${error.getStatus()})`);
+          channel.ack(originalMsg);
+          throw error;
+        }
+
         if (retryCount >= maxRetries) {
           logger.error(
             `❌ Message failed after ${maxRetries} retries. Moving to DLQ.`,
           );
           channel.ack(originalMsg); // remove from main queue
-          // no requeue => goes to dead-letter queue
         } else {
           logger.warn(
             `⚠️ Message failed (retry #${retryCount + 1}). Sending to retry queue.`,
           );
-          channel.nack(originalMsg, false, false); // nack => send to retry queue
+          channel.nack(originalMsg, false, false);
         }
         throw error;
       });

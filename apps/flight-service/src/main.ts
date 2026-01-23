@@ -3,11 +3,15 @@ import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { FlightServiceModule } from './flight-service.module';
+import { CommonRpcExceptionFilter } from '@app/common';
 
 async function bootstrap() {
   const logger = new Logger('FlightService');
   const app = await NestFactory.create(FlightServiceModule);
   const configService = app.get(ConfigService);
+
+  // Global prefix for HTTP routes
+  app.setGlobalPrefix('api/v1');
 
   const rabbitmqUrl = configService.get<string>('RABBITMQ_URL');
   const queue = 'flight_queue';
@@ -32,6 +36,8 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  app.useGlobalFilters(new CommonRpcExceptionFilter());
 
   await app.startAllMicroservices();
   logger.log(`Flight Service is running and listening to queue: ${queue}`);

@@ -13,7 +13,7 @@ export class AuthAudit {
   @Column({ type: 'int', nullable: true })
   userId: number | null; // null if user not found
 
-  @Column({ type: 'varchar', length: 45 })
+  @Column({ type: 'varchar', length: 45, nullable: true })
   ip: string;
 
   @Column({ type: 'varchar', length: 96, nullable: true })
