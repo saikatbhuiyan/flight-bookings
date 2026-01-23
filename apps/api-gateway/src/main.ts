@@ -40,15 +40,34 @@ async function bootstrap() {
 
   // Swagger Documentation
   const config = new DocumentBuilder()
-    .setTitle('Flight Booking API')
-    .setDescription('API documentation for Flight Booking System')
+    .setTitle('Flight Booking API Gateway')
+    .setDescription(
+      'The API Gateway for the Flight Booking Microservices System. ' +
+      'This API provides endpoints for user authentication, flight search, and booking management.',
+    )
     .setVersion('1.0')
-    .addBearerAuth()
-    .addTag('Authentication')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Enter JWT token',
+        in: 'header',
+      },
+      'JWT-auth', // This name here is important for referencing in @ApiBearerAuth()
+    )
+    .addTag('Authentication', 'User registration, login, and token management')
+    .addTag('Health', 'System health and status monitoring')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  SwaggerModule.setup('api/docs', app, document, {
+    swaggerOptions: {
+      persistAuthorization: true,
+    },
+    customSiteTitle: 'Flight Booking API Docs',
+  });
 
   app.use(
     helmet({
