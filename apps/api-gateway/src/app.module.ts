@@ -24,11 +24,13 @@ import {
 import { WinstonModule } from 'nest-winston';
 import { TerminusModule } from '@nestjs/terminus';
 import { GatewayHealthController } from './controllers/health.controller';
+import authConfig from '@app/common/config/auth.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      load: [authConfig],
       envFilePath: '.env',
     }),
     RedisModule,

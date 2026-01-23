@@ -13,7 +13,10 @@ async function bootstrap() {
   const queue = 'auth_queue';
 
   // Automatically create queues for this service
-  await RmqSetup.setupQueues(configService, 'auth', 10000, 3);
+  await RmqSetup.setupQueues(configService, 'auth', 10000, 1);
+
+  // Global prefix for HTTP routes
+  app.setGlobalPrefix('api/v1');
 
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.RMQ,

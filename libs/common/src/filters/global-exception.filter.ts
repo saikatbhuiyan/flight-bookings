@@ -35,11 +35,18 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     let status: number;
     let message: string;
+    let errorCode: string;
     let errors: Array<Record<string, unknown> | string> | undefined;
+
     console.log(exception);
+
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const res = exception.getResponse();
+
+      // Default error code based on status
+      errorCode = `ERR_${HttpStatus[status] || 'UNKNOWN'}`;
+
       if (typeof res === 'string') {
         message = res;
       } else if (typeof res === 'object' && res !== null) {
@@ -52,6 +59,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         // Better handling of class-validator errors which usually come as an array in 'message'
         if (Array.isArray(obj.message)) {
           errors = obj.message;
+          errorCode = 'ERR_VALIDATION_FAILED';
         }
       } else {
         message = 'Error';
@@ -59,6 +67,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     } else if (exception instanceof QueryFailedError) {
       status = HttpStatus.BAD_REQUEST;
       message = 'Database query failed';
+      errorCode = 'ERR_DATABASE_ERROR';
 
       // Mask database details in production
       if (!isProduction) {
@@ -69,12 +78,15 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       const error = exception as any;
       if (error.code === '23505') {
         message = 'Duplicate entry';
+        errorCode = 'ERR_DUPLICATE_ENTRY';
       } else if (error.code === '23503') {
         message = 'Foreign key constraint violation';
+        errorCode = 'ERR_FOREIGN_KEY_VIOLATION';
       }
     } else if (exception instanceof Error) {
       status = HttpStatus.INTERNAL_SERVER_ERROR;
       message = exception.message;
+      errorCode = 'ERR_INTERNAL_SERVER_ERROR';
 
       // Mask internal errors in production
       if (isProduction && status === 500) {
@@ -83,6 +95,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     } else {
       status = HttpStatus.INTERNAL_SERVER_ERROR;
       message = 'Unexpected error';
+      errorCode = 'ERR_UNEXPECTED';
     }
 
     const apiVersion = this.configService.get<string>('appConfig.apiVersion', '1.0');
@@ -92,12 +105,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       version: apiVersion,
       statusCode: status,
       message,
+      errorCode,
       data: null,
       timestamp,
       correlationId,
       path,
       // Hide stack trace in production
-      errors: isProduction ? errors : (errors || (exception instanceof Error ? [exception.stack] : undefined)),
+      errors: isProduction ? errors : (errors || (exception instanceof Error ? [exception.stack!] : undefined)),
     };
 
     // Enhanced logging

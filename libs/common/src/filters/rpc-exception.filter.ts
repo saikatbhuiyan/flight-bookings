@@ -14,6 +14,8 @@ export class CommonRpcExceptionFilter
     private readonly logger = new Logger(CommonRpcExceptionFilter.name);
 
     catch(exception: any, host: ArgumentsHost): Observable<any> {
+        this.logger.debug(`Catching RPC exception of type: ${exception?.constructor?.name}`);
+
         const error =
             exception instanceof HttpException
                 ? {
@@ -26,7 +28,7 @@ export class CommonRpcExceptionFilter
                 };
 
         this.logger.error(
-            `Microservice Error: ${JSON.stringify(error.message)}`,
+            `[RPC Error] ${error.status} - ${JSON.stringify(error.message)}`,
             exception.stack,
         );
 

@@ -27,6 +27,9 @@ export interface ApiResponse<T = unknown> {
 
   /** Correlation ID for tracing across logs and responses */
   correlationId?: string;
+
+  /** Machine-readable error code */
+  errorCode?: string;
 }
 
 export interface FilterOptions {

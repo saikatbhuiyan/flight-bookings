@@ -10,6 +10,9 @@ async function bootstrap() {
   const app = await NestFactory.create(BookingServiceModule);
   const configService = app.get(ConfigService);
 
+  // Global prefix for HTTP routes
+  app.setGlobalPrefix('api/v1');
+
   const rabbitmqUrl = configService.get<string>('RABBITMQ_URL');
   const queue = 'booking_queue';
 

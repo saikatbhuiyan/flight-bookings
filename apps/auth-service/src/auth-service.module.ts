@@ -32,7 +32,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
 import { AuthMessageController } from './authentication/authentication.controller';
 
-import authConfig from './config/auth.config';
+import authConfig from '@app/common/config/auth.config';
 
 @Module({
   imports: [

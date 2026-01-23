@@ -149,11 +149,27 @@ export class AuthController {
     try {
       return await firstValueFrom(this.authClient.send<T>(pattern, data));
     } catch (error) {
-      console.error('Microservice error:', error);
-      // Proper error extraction from microservice serialized error
       const rpcError = error as any;
-      const status = typeof rpcError.status === 'number' ? rpcError.status : 500;
-      const message = rpcError.message || 'Internal server error';
+      console.error(`[Gateway] Error calling ${pattern}:`, rpcError);
+
+      // Extract status: handle numeric and standard RMQ status formats
+      let status = HttpStatus.INTERNAL_SERVER_ERROR;
+      if (typeof rpcError.status === 'number') {
+        status = rpcError.status;
+      } else if (rpcError.statusCode && typeof rpcError.statusCode === 'number') {
+        status = rpcError.statusCode;
+      }
+
+      // Extract message: handle string, array, or nested object formats
+      let message = 'Internal server error';
+      if (typeof rpcError.message === 'string') {
+        message = rpcError.message;
+      } else if (rpcError.message && typeof rpcError.message === 'object') {
+        // Handle NestJS standard error response object: { message: "...", error: "...", statusCode: ... }
+        message = rpcError.message.message || rpcError.message.error || JSON.stringify(rpcError.message);
+      } else if (rpcError.error && typeof rpcError.error === 'string') {
+        message = rpcError.error;
+      }
 
       throw new HttpException(message, status);
     }

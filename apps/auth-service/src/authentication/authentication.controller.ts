@@ -72,7 +72,7 @@
 //   }
 // }
 
-import { Controller, Logger } from '@nestjs/common';
+import { Controller, Logger, UseFilters } from '@nestjs/common';
 import {
   Ctx,
   MessagePattern,
@@ -87,9 +87,11 @@ import {
   SignInDto,
   SignOutDto,
   SignUpDto,
+  CommonRpcExceptionFilter,
 } from '@app/common';
 
 @Controller()
+@UseFilters(CommonRpcExceptionFilter)
 export class AuthMessageController {
   private readonly logger = new Logger(AuthMessageController.name);
 
@@ -122,6 +124,13 @@ export class AuthMessageController {
   signOut(@Payload() data: SignOutDto, @Ctx() context: RmqContext) {
     return RmqHelper.handleAck(context, async () => {
       return this.authService.signOut(data);
+    });
+  }
+
+  @MessagePattern(MP.AUTH_VALIDATE)
+  validateUser(@Payload() data: any, @Ctx() context: RmqContext) {
+    return RmqHelper.handleAck(context, async () => {
+      return this.authService.validateUser(data);
     });
   }
 }
