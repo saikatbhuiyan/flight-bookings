@@ -22,6 +22,7 @@ import {
   RolesGuard,
   HealthModule,
   GlobalExceptionFilter,
+  CommonRpcExceptionFilter,
   winstonLoggerConfig,
   LoggingInterceptor,
 } from '@app/common';
@@ -43,7 +44,6 @@ import authConfig from '@app/common/config/auth.config';
     }),
     DatabaseModule.forRoot([User, AuthAudit, NotificationSettings]),
     TypeOrmModule.forFeature([User, AuthAudit, NotificationSettings]),
-    // JwtModule.registerAsync(appConfig['jwt'].asProvider()),
     CacheModule.registerAsync({
       isGlobal: true,
       imports: [ConfigModule],
@@ -67,6 +67,10 @@ import authConfig from '@app/common/config/auth.config';
     {
       provide: APP_INTERCEPTOR,
       useClass: LoggingInterceptor,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: CommonRpcExceptionFilter,
     },
     {
       provide: APP_FILTER,

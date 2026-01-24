@@ -9,6 +9,10 @@ export class RmqHelper {
     callback: () => Promise<any>,
     maxRetries = 3,
   ) {
+    if (!context || typeof context.getChannelRef !== 'function') {
+      return callback();
+    }
+
     const channel = context.getChannelRef();
     const originalMsg = context.getMessage();
 

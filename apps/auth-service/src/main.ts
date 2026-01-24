@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -44,7 +45,16 @@ async function bootstrap() {
     }),
   );
 
-  app.useGlobalFilters(new CommonRpcExceptionFilter());
+
+  // Swagger Documentation
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Auth Service')
+    .setDescription('Internal API for Auth Service')
+    .setVersion('1.0')
+    .addTag('Health')
+    .build();
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api/docs', app, document);
 
   await app.startAllMicroservices();
   logger.log(`Auth Service is running and listening to queue: ${queue}`);

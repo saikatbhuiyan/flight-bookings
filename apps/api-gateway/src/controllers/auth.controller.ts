@@ -23,7 +23,7 @@ import {
   CookieService,
 } from '@app/common';
 import type { Request, Response } from 'express';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import {
   SignUpDto as RegisterDto,
@@ -50,6 +50,12 @@ export class AuthController {
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Register a new user' })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'User registered successfully',
+    type: ApiResponseDto,
+  })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Invalid input' })
   async register(@Body() registerDto: RegisterDto) {
     console.log('Register DTO:', registerDto);
     const result = await this.callService(MP.AUTH_REGISTER, registerDto);
@@ -61,6 +67,12 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login user' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Login successful',
+    type: ApiResponseDto,
+  })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Invalid credentials' })
   async login(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
@@ -89,6 +101,12 @@ export class AuthController {
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Refresh access token' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Token refreshed successfully',
+    type: ApiResponseDto,
+  })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Missing or invalid refresh token' })
   async refreshTokens(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
@@ -121,6 +139,13 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Logout user' })
+  @ApiBearerAuth('JWT-auth')
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Logged out successfully',
+    type: ApiResponseDto,
+  })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
   async logout(
     @Res({ passthrough: true }) res: Response,
     @Body() payload: SignOutDto,
@@ -138,8 +163,14 @@ export class AuthController {
   // --- CURRENT USER ----------------------------------------------
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  @ApiBearerAuth()
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Get current user profile' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Profile retrieved successfully',
+    type: ApiResponseDto,
+  })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
   getProfile(@CurrentUser() user: any) {
     return ApiResponseDto.success(user, 'Profile retrieved successfully');
   }
