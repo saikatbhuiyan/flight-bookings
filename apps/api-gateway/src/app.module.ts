@@ -7,8 +7,8 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
 import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthController } from './controllers/auth.controller';
-// import { FlightController } from './controllers/flight.controller';
-// import { BookingController } from './controllers/booking.controller';
+import { FlightController } from './controllers/flight.controller';
+import { BookingController } from './controllers/booking.controller';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import {
@@ -120,7 +120,12 @@ import authConfig from '@app/common/config/auth.config';
     WinstonModule.forRoot(winstonLoggerConfig),
     TerminusModule,
   ],
-  controllers: [AuthController, GatewayHealthController],
+  controllers: [
+    AuthController,
+    FlightController,
+    BookingController,
+    GatewayHealthController,
+  ],
   providers: [
     CookieService,
     RabbitMQHealthIndicator,

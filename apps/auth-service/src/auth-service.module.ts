@@ -43,7 +43,6 @@ import authConfig from '@app/common/config/auth.config';
     }),
     DatabaseModule.forRoot([User, AuthAudit, NotificationSettings]),
     TypeOrmModule.forFeature([User, AuthAudit, NotificationSettings]),
-    // JwtModule.registerAsync(appConfig['jwt'].asProvider()),
     CacheModule.registerAsync({
       isGlobal: true,
       imports: [ConfigModule],
