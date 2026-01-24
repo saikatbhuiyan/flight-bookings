@@ -45,7 +45,6 @@ async function bootstrap() {
     }),
   );
 
-  app.useGlobalFilters(new CommonRpcExceptionFilter());
 
   // Swagger Documentation
   const swaggerConfig = new DocumentBuilder()

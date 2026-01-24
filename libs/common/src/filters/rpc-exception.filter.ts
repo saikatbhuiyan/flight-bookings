@@ -14,8 +14,11 @@ export class CommonRpcExceptionFilter
     private readonly logger = new Logger(CommonRpcExceptionFilter.name);
 
     catch(exception: any, host: ArgumentsHost): Observable<any> {
-        this.logger.debug(`Catching RPC exception of type: ${exception?.constructor?.name}`);
+        if (host.getType() !== 'rpc') {
+            throw exception;
+        }
 
+        const isRpc = host.getType() === 'rpc';
         const error =
             exception instanceof HttpException
                 ? {
@@ -23,14 +26,20 @@ export class CommonRpcExceptionFilter
                     message: exception.getResponse(),
                 }
                 : {
-                    status: 500,
+                    status: exception.status || 500,
                     message: exception.message || 'Internal server error',
                 };
 
-        this.logger.error(
-            `[RPC Error] ${error.status} - ${JSON.stringify(error.message)}`,
-            exception.stack,
-        );
+        const status = error.status;
+        const message = JSON.stringify(error.message);
+
+        if (isRpc) {
+            if (status >= 500) {
+                this.logger.error(`[RPC Error] ${status} - ${message}`, exception.stack);
+            } else {
+                this.logger.warn(`[RPC Client Error] ${status} - ${message}`);
+            }
+        }
 
         return throwError(() => error);
     }
