@@ -1,6 +1,5 @@
 import { DataSource } from 'typeorm';
 import { config } from 'dotenv';
-import { Flight } from '../../../../apps/flight-service/src/entities/flight.entity';
 
 config({ path: 'apps/flight-service/.env' });
 
@@ -11,7 +10,10 @@ export default new DataSource({
     username: process.env.DB_USERNAME || 'postgres',
     password: process.env.DB_PASSWORD || 'postgres',
     database: process.env.DB_NAME || 'flight_db',
-    entities: [Flight],
+    entities: [
+        'libs/database/src/entities/*.entity.ts',
+        'apps/flight-service/src/entities/*.entity.ts',
+    ],
     migrations: ['apps/flight-service/src/migrations/*.ts'],
     synchronize: false,
 });

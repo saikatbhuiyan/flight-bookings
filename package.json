@@ -26,7 +26,7 @@
         "docker:logs": "docker-compose logs -f",
         "docker:build": "docker-compose build",
         "setup:localstack": "aws --endpoint-url=http://localhost:4566 s3 mb s3://flight-booking-bucket",
-        "typeorm": "typeorm-ts-node-commonjs",
+        "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js",
         "migration:generate": "npm run typeorm -- migration:generate",
         "migration:run": "npm run typeorm -- migration:run",
         "migration:revert": "npm run typeorm -- migration:revert",
@@ -38,7 +38,10 @@
         "migration:revert:booking": "npm run typeorm -- migration:revert -d libs/database/src/data-sources/booking.datasource.ts",
         "migration:generate:flight": "npm run typeorm -- migration:generate -d libs/database/src/data-sources/flight.datasource.ts",
         "migration:run:flight": "npm run typeorm -- migration:run -d libs/database/src/data-sources/flight.datasource.ts",
-        "migration:revert:flight": "npm run typeorm -- migration:revert -d libs/database/src/data-sources/flight.datasource.ts"
+        "migration:revert:flight": "npm run typeorm -- migration:revert -d libs/database/src/data-sources/flight.datasource.ts",
+        "migration:create:auth": "npm run typeorm -- migration:create",
+        "migration:create:booking": "npm run typeorm -- migration:create",
+        "migration:create:flight": "npm run typeorm -- migration:create"
     },
     "dependencies": {
         "@aws-sdk/client-s3": "^3.914.0",

@@ -1,6 +1,5 @@
 import { DataSource } from 'typeorm';
 import { config } from 'dotenv';
-import { Booking } from '../../../../apps/booking-service/src/entities/booking.entity';
 
 config({ path: 'apps/booking-service/.env' });
 
@@ -11,7 +10,10 @@ export default new DataSource({
     username: process.env.DB_USERNAME || 'postgres',
     password: process.env.DB_PASSWORD || 'postgres',
     database: process.env.DB_NAME || 'booking_db',
-    entities: [Booking],
+    entities: [
+        'libs/database/src/entities/*.entity.ts',
+        'apps/booking-service/src/entities/*.entity.ts',
+    ],
     migrations: ['apps/booking-service/src/migrations/*.ts'],
     synchronize: false,
 });

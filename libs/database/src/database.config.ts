@@ -4,6 +4,7 @@ import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 export const getDatabaseConfig = (
   configService: ConfigService,
   entities: any[],
+  migrations: any[] = [],
 ): TypeOrmModuleOptions => ({
   type: 'postgres',
   host: configService.get<string>('DB_HOST'),
@@ -14,7 +15,7 @@ export const getDatabaseConfig = (
   entities,
   synchronize: configService.get<string>('NODE_ENV') === 'development',
   logging: configService.get<string>('NODE_ENV') === 'development',
-  migrations: ['dist/migrations/*.js'],
+  migrations: [...migrations, 'dist/migrations/*.js'],
   migrationsRun: false,
   ssl: configService.get<string>('NODE_ENV') === 'production',
   poolSize: 10,

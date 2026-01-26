@@ -42,7 +42,10 @@ import authConfig from '@app/common/config/auth.config';
       load: [authConfig],
       envFilePath: '.env',
     }),
-    DatabaseModule.forRoot([User, AuthAudit, NotificationSettings]),
+    DatabaseModule.forRoot(
+      [User, AuthAudit, NotificationSettings],
+      ['apps/auth-service/src/migrations/*.ts'],
+    ),
     TypeOrmModule.forFeature([User, AuthAudit, NotificationSettings]),
     CacheModule.registerAsync({
       isGlobal: true,

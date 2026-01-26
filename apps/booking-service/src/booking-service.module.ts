@@ -21,7 +21,7 @@ import { LoggingInterceptor } from '@app/common';
       isGlobal: true,
       envFilePath: '.env',
     }),
-    DatabaseModule.forRoot([Booking]),
+    DatabaseModule.forRoot([Booking], ['apps/booking-service/src/migrations/*.ts']),
     TypeOrmModule.forFeature([Booking]),
     CommonModule,
     WinstonModule.forRoot(winstonLoggerConfig),

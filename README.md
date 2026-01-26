@@ -270,16 +270,62 @@ npm run test:cov
 
 ## 📊 Database Migrations
 
+The system uses a "database-per-service" architecture. Each service has its own PostgreSQL database and migration folder.
+
+### 🔑 Auth Service (`auth_db`)
 ```bash
-# Generate migration
-npm run migration:generate -- -n MigrationName
+# Generate migration from schema changes
+npm run migration:generate:auth -- apps/auth-service/src/migrations/MigrationName
+
+# Create empty migration
+npm run migration:create:auth -- apps/auth-service/src/migrations/MigrationName
 
 # Run migrations
-npm run migration:run
+npm run migration:run:auth
 
 # Revert migration
-npm run migration:revert
+npm run migration:revert:auth
 ```
+
+### ✈️ Flight Service (`flight_db`)
+```bash
+# Generate migration from schema changes
+npm run migration:generate:flight -- apps/flight-service/src/migrations/MigrationName
+
+# Create empty migration
+npm run migration:create:flight -- apps/flight-service/src/migrations/MigrationName
+
+# Run migrations
+npm run migration:run:flight
+
+# Revert migration
+npm run migration:revert:flight
+```
+
+### 📅 Booking Service (`booking_db`)
+```bash
+# Generate migration from schema changes
+npm run migration:generate:booking -- apps/booking-service/src/migrations/MigrationName
+
+# Create empty migration
+npm run migration:create:booking -- apps/booking-service/src/migrations/MigrationName
+
+# Run migrations
+npm run migration:run:booking
+
+# Revert migration
+npm run migration:revert:booking
+```
+
+> [!IMPORTANT]
+> When running `generate` or `create` commands, ensure you provide the full path including the folder (e.g., `apps/service-name/src/migrations/Name`) so TypeORM places the file in the correct location.
+
+> [!TIP]
+> **Running migrations from your host machine:**
+> The `.env` files point to `DB_HOST=postgres` for Docker networking. When running migrations from your terminal (host machine), you may need to override the host:
+> ```bash
+> DB_HOST=localhost npm run migration:run:flight
+> ```
 
 ## 🔧 Configuration
 
