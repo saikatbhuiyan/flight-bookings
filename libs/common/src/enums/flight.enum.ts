@@ -1,14 +1,16 @@
 export enum FlightStatus {
-    SCHEDULED = 'scheduled',
-    DELAYED = 'delayed',
-    CANCELLED = 'cancelled',
-    DEPARTED = 'departed',
-    ARRIVED = 'arrived',
+    SCHEDULED = 'SCHEDULED',
+    DELAYED = 'DELAYED',
+    CANCELLED = 'CANCELLED',
+    DEPARTED = 'DEPARTED',
+    ARRIVED = 'ARRIVED',
+    BOARDING = 'BOARDING',
+    IN_FLIGHT = 'IN_FLIGHT',
 }
 
 export enum FlightClass {
-    ECONOMY = 'economy',
-    PREMIUM_ECONOMY = 'premium_economy',
-    BUSINESS = 'business',
-    FIRST_CLASS = 'first_class',
+    ECONOMY = 'ECONOMY',
+    PREMIUM_ECONOMY = 'PREMIUM_ECONOMY',
+    BUSINESS = 'BUSINESS',
+    FIRST_CLASS = 'FIRST_CLASS',
 }
