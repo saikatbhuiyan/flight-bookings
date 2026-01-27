@@ -1,69 +1,93 @@
-import { Entity, Column, Index } from 'typeorm';
-import { AbstractEntity } from '@app/database';
-
-import { FlightStatus, FlightClass } from '@app/common';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Index, Check, VersionColumn } from 'typeorm';
+import { FlightStatus } from '@app/common';
+import { Airplane } from './airplane.entity';
+import { Airport } from './airport.entity';
 
 @Entity('flights')
-@Index(['flightNumber'], { unique: true })
-@Index(['departureAirport', 'arrivalAirport', 'departureTime'])
-export class Flight extends AbstractEntity {
-  @Column({ name: 'flight_number', unique: true })
+@Index(['flightNumber'])
+@Index(['departureAirportId', 'departureTime'])
+@Index(['arrivalAirportId', 'arrivalTime'])
+@Index(['status'])
+@Check(`"departure_time" < "arrival_time"`)
+@Check(`"departure_airport_id" != "arrival_airport_id"`)
+export class Flight {
+  @PrimaryGeneratedColumn('increment')
+  id: number;
+
+  @Column({ name: 'flight_number', type: 'varchar', length: 20, nullable: false })
   flightNumber: string;
 
-  @Column({ name: 'airline_name' })
-  airlineName: string;
+  @Column({ name: 'airplane_id', type: 'int', nullable: false })
+  airplaneId: number;
 
-  @Column({ name: 'airline_code' })
-  airlineCode: string;
+  @Column({ name: 'departure_airport_id', type: 'int', nullable: false })
+  departureAirportId: number;
 
-  @Column({ name: 'departure_airport' })
-  departureAirport: string;
+  @Column({ name: 'arrival_airport_id', type: 'int', nullable: false })
+  arrivalAirportId: number;
 
-  @Column({ name: 'arrival_airport' })
-  arrivalAirport: string;
-
-  @Column({ name: 'departure_time', type: 'timestamp' })
+  @Column({ name: 'departure_time', type: 'timestamp with time zone', nullable: false })
   departureTime: Date;
 
-  @Column({ name: 'arrival_time', type: 'timestamp' })
+  @Column({ name: 'arrival_time', type: 'timestamp with time zone', nullable: false })
   arrivalTime: Date;
 
-  @Column({ type: 'int', name: 'duration_minutes' })
-  durationMinutes: number;
+  @Column({ name: 'boarding_gate', type: 'varchar', length: 10, nullable: true })
+  boardingGate: string;
+
+  @Column({ type: 'varchar', length: 10, nullable: true })
+  terminal: string;
+
+  @Column({ name: 'economy_price', type: 'decimal', precision: 10, scale: 2, nullable: false })
+  economyPrice: number;
+
+  @Column({ name: 'business_price', type: 'decimal', precision: 10, scale: 2, nullable: false })
+  businessPrice: number;
+
+  @Column({ name: 'first_class_price', type: 'decimal', precision: 10, scale: 2, nullable: false })
+  firstClassPrice: number;
+
+  @Column({ name: 'premium_economy_price', type: 'decimal', precision: 10, scale: 2, nullable: false })
+  premiumEconomyPrice: number;
+
+  @Column({ name: 'economy_seats_available', type: 'int', nullable: false })
+  economySeatsAvailable: number;
+
+  @Column({ name: 'business_seats_available', type: 'int', nullable: false })
+  businessSeatsAvailable: number;
+
+  @Column({ name: 'first_class_seats_available', type: 'int', nullable: false })
+  firstClassSeatsAvailable: number;
+
+  @Column({ name: 'premium_economy_seats_available', type: 'int', nullable: false })
+  premiumEconomySeatsAvailable: number;
 
   @Column({
     type: 'enum',
     enum: FlightStatus,
     default: FlightStatus.SCHEDULED,
+    nullable: false,
   })
   status: FlightStatus;
 
-  @Column({ name: 'aircraft_type' })
-  aircraftType: string;
+  @VersionColumn()
+  version: number;
 
-  @Column({ type: 'int', name: 'total_seats' })
-  totalSeats: number;
+  @ManyToOne(() => Airplane, (airplane) => airplane.flights, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'airplane_id' })
+  airplane: Airplane;
 
-  @Column({ type: 'int', name: 'available_seats' })
-  availableSeats: number;
+  @ManyToOne(() => Airport, (airport) => airport.departureFlights, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'departure_airport_id' })
+  departureAirport: Airport;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, name: 'base_price' })
-  basePrice: number;
+  @ManyToOne(() => Airport, (airport) => airport.arrivalFlights, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'arrival_airport_id' })
+  arrivalAirport: Airport;
 
-  @Column({ type: 'jsonb', name: 'price_by_class' })
-  priceByClass: {
-    economy: number;
-    premium_economy: number;
-    business: number;
-    first_class: number;
-  };
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt: Date;
 
-  @Column({ type: 'jsonb', nullable: true })
-  amenities?: string[];
-
-  @Column({ type: 'text', nullable: true })
-  notes?: string;
-
-  @Column({ name: 'image_url', nullable: true })
-  imageUrl?: string;
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt: Date;
 }
