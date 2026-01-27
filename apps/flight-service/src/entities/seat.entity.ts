@@ -9,7 +9,7 @@ export enum SeatType {
 }
 
 @Entity('seats')
-@Index(['airplane_id'])
+@Index(['airplaneId'])
 export class Seat {
     @PrimaryGeneratedColumn('increment')
     id: number;

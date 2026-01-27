@@ -3,9 +3,9 @@ import { Flight } from './flight.entity';
 import { Seat } from './seat.entity';
 
 @Entity('airplanes')
-@Index(['model_number'])
+@Index(['modelNumber'])
 @Index(['manufacturer'])
-@Index(['registration_number'], { unique: true })
+@Index(['registrationNumber'], { unique: true })
 export class Airplane {
     @PrimaryGeneratedColumn('increment')
     id: number;
