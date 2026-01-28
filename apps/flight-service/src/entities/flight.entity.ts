@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Index, Check, VersionColumn } from 'typeorm';
-import { FlightStatus } from '@app/common';
+import { FlightStatus } from '../../../../libs/common/src/enums/flight.enum';
 import { Airplane } from './airplane.entity';
 import { Airport } from './airport.entity';
 

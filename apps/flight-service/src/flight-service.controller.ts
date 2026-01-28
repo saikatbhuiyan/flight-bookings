@@ -2,7 +2,7 @@ import { Controller, Get, Query, Param, HttpStatus, Logger } from '@nestjs/commo
 import { ApiOperation, ApiResponse, ApiTags, ApiParam } from '@nestjs/swagger';
 import { Ctx, MessagePattern, Payload, RmqContext } from '@nestjs/microservices';
 import { FlightServiceService } from './flight-service.service';
-import { SearchFlightDto, ApiResponseDto, MessagePattern as MP, RmqHelper } from '@app/common';
+import { SharedSearchFlightDto, ApiResponseDto, MessagePattern as MP, RmqHelper } from '@app/common';
 
 @ApiTags('Flights')
 @Controller('flights')
@@ -19,7 +19,7 @@ export class FlightServiceController {
     description: 'Returns a list of matching flights',
     type: ApiResponseDto,
   })
-  async searchFlights(@Payload() searchDto: SearchFlightDto, @Ctx() context?: RmqContext) {
+  async searchFlights(@Payload() searchDto: SharedSearchFlightDto, @Ctx() context?: RmqContext) {
     if (context) {
       return RmqHelper.handleAck(context, async () => {
         this.logger.debug(`RMQ: Searching flights for ${searchDto.departureAirport} to ${searchDto.arrivalAirport}`);

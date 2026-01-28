@@ -6,6 +6,10 @@ import {
     HttpStatus,
     Inject,
     HttpException,
+    Post,
+    Body,
+    Delete,
+    ParseIntPipe,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
@@ -13,9 +17,12 @@ import {
     MessagePattern as MP,
     ApiResponseDto,
     Public,
-    SearchFlightDto,
+    Roles,
+    Role,
+    SharedCreateFlightDto,
+    SharedSearchFlightDto,
 } from '@app/common';
-import { ApiOperation, ApiResponse, ApiTags, ApiParam } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('Flights')
 @Controller('flights')
@@ -32,7 +39,7 @@ export class FlightController {
         description: 'Returns a list of matching flights',
         type: ApiResponseDto,
     })
-    async searchFlights(@Query() searchDto: SearchFlightDto) {
+    async searchFlights(@Query() searchDto: SharedSearchFlightDto) {
         const result = await this.callService(MP.FLIGHT_SEARCH, searchDto);
         return ApiResponseDto.success(result, 'Flights retrieved successfully');
     }
@@ -40,16 +47,34 @@ export class FlightController {
     @Public()
     @Get(':id')
     @ApiOperation({ summary: 'Get flight details by ID' })
-    @ApiParam({ name: 'id', description: 'Flight ID (UUID)' })
+    @ApiParam({ name: 'id', description: 'Flight ID' })
     @ApiResponse({
         status: HttpStatus.OK,
         description: 'Returns the flight details',
         type: ApiResponseDto,
     })
     @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Flight not found' })
-    async getFlightById(@Param('id') id: string) {
+    async getFlightById(@Param('id', ParseIntPipe) id: number) {
         const result = await this.callService(MP.FLIGHT_FIND_BY_ID, { id });
         return ApiResponseDto.success(result, 'Flight retrieved successfully');
+    }
+
+    @Post()
+    @Roles(Role.ADMIN)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Create a new flight' })
+    async create(@Body() createDto: SharedCreateFlightDto) {
+        const result = await this.callService(MP.FLIGHT_CREATE, createDto);
+        return ApiResponseDto.success(result, 'Flight created successfully');
+    }
+
+    @Delete(':id')
+    @Roles(Role.ADMIN)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Delete a flight' })
+    async remove(@Param('id', ParseIntPipe) id: number) {
+        await this.callService(MP.FLIGHT_DELETE, { id });
+        return ApiResponseDto.success(null, 'Flight deleted successfully');
     }
 
     private async callService<T>(pattern: string, data: any): Promise<T> {

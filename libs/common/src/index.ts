@@ -5,7 +5,6 @@ export * from './health/indicators/redis.health';
 export * from './constants';
 export * from './decorators';
 export * from './enums';
-export * from './enums/flight.enum';
 export * from './errors';
 export * from './filters/global-exception.filter';
 export * from './filters/rpc-exception.filter';
