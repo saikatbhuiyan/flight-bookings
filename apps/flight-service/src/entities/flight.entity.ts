@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Index, Check, VersionColumn } from 'typeorm';
-import { FlightStatus } from '../../../../libs/common/src/enums/flight.enum';
+import { FlightStatus } from '@app/common';
 import { Airplane } from './airplane.entity';
 import { Airport } from './airport.entity';
 
@@ -65,6 +65,7 @@ export class Flight {
   @Column({
     type: 'enum',
     enum: FlightStatus,
+    enumName: 'flight_status',
     default: FlightStatus.SCHEDULED,
     nullable: false,
   })

@@ -26,6 +26,7 @@ export class Seat {
     @Column({
         type: 'enum',
         enum: SeatType,
+        enumName: 'seat_type',
         default: SeatType.ECONOMY,
     })
     type: SeatType;

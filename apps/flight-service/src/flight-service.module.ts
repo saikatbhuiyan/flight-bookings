@@ -32,7 +32,7 @@ import { FlightModule } from './modules/flight/flight.module';
     }),
     DatabaseModule.forRoot(
       [Flight, City, Airport, Airplane, Seat],
-      ['apps/flight-service/src/migrations/*.ts'],
+      [__dirname + '/migrations/*.{ts,js}'],
     ),
     TypeOrmModule.forFeature([Flight, City, Airport, Airplane, Seat]),
     CommonModule,

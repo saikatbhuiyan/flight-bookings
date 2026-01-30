@@ -15,7 +15,7 @@ export const getDatabaseConfig = (
   entities,
   synchronize: configService.get<string>('NODE_ENV') === 'development',
   logging: configService.get<string>('NODE_ENV') === 'development',
-  migrations: [...migrations, 'dist/migrations/*.js'],
+  migrations,
   migrationsRun: false,
   ssl: configService.get<string>('NODE_ENV') === 'production',
   poolSize: 10,
