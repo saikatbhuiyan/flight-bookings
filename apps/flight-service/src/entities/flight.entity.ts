@@ -65,6 +65,7 @@ export class Flight {
   @Column({
     type: 'enum',
     enum: FlightStatus,
+    enumName: 'flight_status',
     default: FlightStatus.SCHEDULED,
     nullable: false,
   })

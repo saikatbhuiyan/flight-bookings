@@ -13,12 +13,6 @@ export enum LogLevel {
   VERBOSE = 'verbose',
 }
 
-export enum Role {
-  ADMIN = 'admin',
-  USER = 'user',
-  AGENT = 'agent',
-}
-
 export enum AuthType {
   Bearer,
   None,
@@ -29,4 +23,11 @@ export enum ClientType {
   MOBILE = 'mobile',
   DESKTOP = 'desktop',
   API = 'api', // for machine-to-machine use
+}
+export * from './flight.enum';
+
+export enum Role {
+  ADMIN = 'admin',
+  USER = 'user',
+  AGENT = 'agent',
 }

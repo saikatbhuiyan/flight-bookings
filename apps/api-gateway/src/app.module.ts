@@ -9,6 +9,10 @@ import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthController } from './controllers/auth.controller';
 import { FlightController } from './controllers/flight.controller';
 import { BookingController } from './controllers/booking.controller';
+import { CityController } from './controllers/city.controller';
+import { AirportController } from './controllers/airport.controller';
+import { AirplaneController } from './controllers/airplane.controller';
+import { SeatController } from './controllers/seat.controller';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import {
@@ -124,6 +128,10 @@ import authConfig from '@app/common/config/auth.config';
     AuthController,
     FlightController,
     BookingController,
+    CityController,
+    AirportController,
+    AirplaneController,
+    SeatController,
     GatewayHealthController,
   ],
   providers: [

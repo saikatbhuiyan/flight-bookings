@@ -288,7 +288,9 @@ npm run migration:revert:auth
 ```
 
 ### ✈️ Flight Service (`flight_db`)
+
 ```bash
+docker exec -it flight-booking-postgres psql -U postgres -d postgres -c "CREATE DATABASE booking_db;"
 # Generate migration from schema changes
 npm run migration:generate:flight -- apps/flight-service/src/migrations/MigrationName
 

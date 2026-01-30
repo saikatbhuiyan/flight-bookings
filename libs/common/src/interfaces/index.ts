@@ -92,21 +92,15 @@ export interface IUser {
   email: string;
   firstName: string;
   lastName: string;
-  role: UserRole;
+  role: Role;
   isActive: boolean;
-}
-
-export enum UserRole {
-  ADMIN = 'admin',
-  USER = 'user',
-  AGENT = 'agent',
 }
 
 // JWT Payload
 export interface IJwtPayload {
   sub: string;
   email: string;
-  role: UserRole;
+  role: Role;
   iat?: number;
   exp?: number;
 }
@@ -134,6 +128,38 @@ export enum MessagePattern {
   FLIGHT_SEARCH = 'flight.search',
   FLIGHT_UPDATE = 'flight.update',
   FLIGHT_DELETE = 'flight.delete',
+
+  // City patterns
+  CITY_CREATE = 'city.create',
+  CITY_FIND_ALL = 'city.findAll',
+  CITY_FIND_BY_ID = 'city.findById',
+  CITY_UPDATE = 'city.update',
+  CITY_DELETE = 'city.delete',
+  CITY_STATISTICS = 'city.statistics',
+
+  // Airport patterns
+  AIRPORT_CREATE = 'airport.create',
+  AIRPORT_FIND_ALL = 'airport.findAll',
+  AIRPORT_FIND_BY_ID = 'airport.findById',
+  AIRPORT_SEARCH = 'airport.search',
+  AIRPORT_UPDATE = 'airport.update',
+  AIRPORT_DELETE = 'airport.delete',
+
+  // Airplane patterns
+  AIRPLANE_CREATE = 'airplane.create',
+  AIRPLANE_FIND_ALL = 'airplane.findAll',
+  AIRPLANE_FIND_BY_ID = 'airplane.findById',
+  AIRPLANE_UPDATE = 'airplane.update',
+  AIRPLANE_DELETE = 'airplane.delete',
+  AIRPLANE_GET_SEATS = 'airplane.getSeats',
+
+  // Seat patterns
+  SEAT_CREATE = 'seat.create',
+  SEAT_FIND_ALL = 'seat.findAll',
+  SEAT_FIND_BY_ID = 'seat.findById',
+  SEAT_UPDATE = 'seat.update',
+  SEAT_DELETE = 'seat.delete',
+  SEAT_BULK_CREATE = 'seat.bulkCreate',
 
   // Booking patterns
   BOOKING_CREATE = 'booking.create',
@@ -176,7 +202,7 @@ export interface ActiveUserData {
   /**
    *  The subject's (user) role.
    **/
-  role?: Role[];
+  role?: Role;
 }
 
 export interface RefreshTokenPayload {
