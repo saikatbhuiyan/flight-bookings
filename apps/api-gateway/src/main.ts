@@ -1,4 +1,4 @@
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
@@ -6,11 +6,20 @@ import { AppModule } from './app.module';
 import helmet from 'helmet';
 import * as compression from 'compression';
 import * as cookieParser from 'cookie-parser';
+import { RateLimiterService } from './rate-limiter/rate-limiter.service';
+import { RateLimiterGuard } from './rate-limiter/rate-limiter.guard';
 
 async function bootstrap() {
   const logger = new Logger('APIGateway');
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
+
+  // Apply global rate limiter (100 requests per minute by default)
+  const reflector = app.get(Reflector);
+  const rateLimiterService = app.get(RateLimiterService);
+
+  app.useGlobalGuards(new RateLimiterGuard(reflector, rateLimiterService));
+
 
   // Security
   app.use(helmet());

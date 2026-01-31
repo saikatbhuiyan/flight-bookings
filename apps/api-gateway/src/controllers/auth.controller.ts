@@ -31,6 +31,7 @@ import {
   RefreshTokenDto,
   SignOutDto,
 } from '@app/common';
+import { RateLimit } from '../rate-limiter/decorators/rate-limit.decorator';
 
 interface AuthTokens {
   accessToken: string;
@@ -38,6 +39,7 @@ interface AuthTokens {
 }
 
 @ApiTags('Authentication')
+@RateLimit({ points: 5, duration: 60 })
 @Controller('auth')
 export class AuthController {
   constructor(
