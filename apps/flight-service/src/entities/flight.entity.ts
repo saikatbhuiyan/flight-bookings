@@ -4,7 +4,7 @@ import { Airplane } from './airplane.entity';
 import { Airport } from './airport.entity';
 
 @Entity('flights')
-@Index(['flightNumber'])
+@Index(['flightNumber', 'departureTime'], { unique: true })
 @Index(['departureAirportId', 'departureTime'])
 @Index(['arrivalAirportId', 'arrivalTime'])
 @Index(['status'])

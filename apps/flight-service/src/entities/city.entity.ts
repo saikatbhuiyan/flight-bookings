@@ -2,7 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 import { Airport } from './airport.entity';
 
 @Entity('cities')
-@Index(['name'], { unique: true })
+@Index(['name', 'country'], { unique: true })
 export class City {
     @PrimaryGeneratedColumn('increment')
     id: number;

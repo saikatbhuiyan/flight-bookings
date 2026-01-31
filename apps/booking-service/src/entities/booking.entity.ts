@@ -27,12 +27,7 @@ export enum PaymentStatus {
 }
 
 @Entity('bookings')
-@Index(['userId'])
-@Index(['flightId'])
-@Index(['status'])
 @Index(['bookingReference'], { unique: true })
-@Index(['createdAt'])
-@Index(['userId', 'status'])
 export class Booking {
   @PrimaryGeneratedColumn('increment')
   id: number;
@@ -101,8 +96,13 @@ export class Booking {
   arrivalTime: Date;
 
   // Seat information
-  @Column({ name: 'seat_numbers', type: 'varchar', length: 100, nullable: true })
-  seatNumbers: string; // JSON array or comma-separated: "12A,12B"
+  @Column({
+    name: 'seat_numbers',
+    type: 'text',
+    array: true,
+    nullable: true,
+  })
+  seatNumbers: string[];
 
   @Column({ name: 'seat_class', type: 'varchar', length: 50, nullable: true })
   seatClass: string; // ECONOMY, BUSINESS, FIRST_CLASS
@@ -154,25 +154,12 @@ export class Booking {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  // Generate booking reference before insert
-  @BeforeInsert()
-  generateBookingReference() {
-    if (!this.bookingReference) {
-      this.bookingReference = this.generateRandomReference();
-    }
-
-    // Set expiry time (15 minutes from creation)
-    if (!this.expiresAt && this.status === BookingStatus.INITIATED) {
-      this.expiresAt = new Date(Date.now() + 15 * 60 * 1000);
-    }
-  }
-
-  private generateRandomReference(): string {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Avoiding confusing chars
-    let reference = 'BK';
+  generateBookingReference(): string {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let ref = 'BK';
     for (let i = 0; i < 8; i++) {
-      reference += chars.charAt(Math.floor(Math.random() * chars.length));
+      ref += chars[Math.floor(Math.random() * chars.length)];
     }
-    return reference;
+    return ref;
   }
 }

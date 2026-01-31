@@ -8,7 +8,6 @@ export * from './enums';
 export * from './errors';
 export * from './filters/global-exception.filter';
 export * from './filters/rpc-exception.filter';
-export * from './guards/rate-limit.guard';
 export * from './health/health.controller';
 export * from './interceptors/logging.interceptor';
 export * from './interceptors/metrics.interceptor';
