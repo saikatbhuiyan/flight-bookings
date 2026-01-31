@@ -27,7 +27,19 @@ export enum PaymentStatus {
 }
 
 @Entity('bookings')
+@Index(['userId'])
+@Index(['flightId'])
+@Index(['status'])
 @Index(['bookingReference'], { unique: true })
+@Index(['createdAt'])
+@Index(['userId', 'status'])
+// Partial indexes for performance
+@Index('idx_bookings_active', ['userId', 'flightId'], {
+  where: "status IN ('INITIATED', 'PENDING', 'BOOKED')",
+})
+@Index('idx_bookings_expired', ['expiresAt'], {
+  where: "status = 'INITIATED' AND expires_at IS NOT NULL",
+})
 export class Booking {
   @PrimaryGeneratedColumn('increment')
   id: number;
