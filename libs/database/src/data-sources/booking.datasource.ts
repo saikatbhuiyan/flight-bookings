@@ -11,7 +11,6 @@ export default new DataSource({
     password: process.env.DB_PASSWORD || 'postgres',
     database: process.env.DB_NAME || 'booking_db',
     entities: [
-        'libs/database/src/entities/*.entity.ts',
         'apps/booking-service/src/entities/*.entity.ts',
     ],
     migrations: ['apps/booking-service/src/migrations/*.ts'],
