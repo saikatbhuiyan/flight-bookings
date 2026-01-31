@@ -11,7 +11,6 @@ export default new DataSource({
     password: process.env.DB_PASSWORD || 'postgres',
     database: process.env.DB_NAME || 'flight_db',
     entities: [
-        'libs/database/src/entities/*.entity.ts',
         'apps/flight-service/src/entities/*.entity.ts',
     ],
     migrations: ['apps/flight-service/src/migrations/*.ts'],

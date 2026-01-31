@@ -40,7 +40,7 @@
         "migration:run:flight": "npm run typeorm -- migration:run -d libs/database/src/data-sources/flight.datasource.ts",
         "migration:revert:flight": "npm run typeorm -- migration:revert -d libs/database/src/data-sources/flight.datasource.ts",
         "migration:create:auth": "npm run typeorm -- migration:create",
-        "migration:create:booking": "npm run typeorm -- migration:create",
+        "migration:create:booking": "npm run typeorm -- migration:create apps/booking-service/src/migrations/Migration",
         "migration:create:flight": "npm run typeorm -- migration:create"
     },
     "dependencies": {
