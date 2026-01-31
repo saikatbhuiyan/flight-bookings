@@ -3,8 +3,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { JwtModule } from '@nestjs/jwt';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { CacheModule } from '@nestjs/cache-manager';
-import { redisStore } from 'cache-manager-redis-yet';
 import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthController } from './controllers/auth.controller';
 import { FlightController } from './controllers/flight.controller';
@@ -29,6 +27,7 @@ import { WinstonModule } from 'nest-winston';
 import { TerminusModule } from '@nestjs/terminus';
 import { GatewayHealthController } from './controllers/health.controller';
 import authConfig from '@app/common/config/auth.config';
+import { RateLimiterModule } from './rate-limiter/rate-limiter.module';
 
 @Module({
   imports: [
@@ -38,6 +37,7 @@ import authConfig from '@app/common/config/auth.config';
       envFilePath: '.env',
     }),
     RedisModule,
+    RateLimiterModule,
     CommonModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -55,20 +55,6 @@ import authConfig from '@app/common/config/auth.config';
         limit: 10,
       },
     ]),
-    CacheModule.registerAsync({
-      isGlobal: true,
-      imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        store: await redisStore({
-          socket: {
-            host: configService.get<string>('REDIS_HOST'),
-            port: configService.get<number>('REDIS_PORT'),
-          },
-          ttl: 3600000,
-        }),
-      }),
-      inject: [ConfigService],
-    }),
     ClientsModule.registerAsync([
       {
         name: 'AUTH_SERVICE',

@@ -27,10 +27,8 @@ import {
   LoggingInterceptor,
 } from '@app/common';
 import { WinstonModule } from 'nest-winston';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { MessageBrokerModule } from '@app/message-broker';
-import { CacheModule } from '@nestjs/cache-manager';
-import { redisStore } from 'cache-manager-redis-yet';
 import { AuthMessageController } from './authentication/authentication.controller';
 
 import authConfig from '@app/common/config/auth.config';
@@ -47,20 +45,6 @@ import authConfig from '@app/common/config/auth.config';
       ['apps/auth-service/src/migrations/*.ts'],
     ),
     TypeOrmModule.forFeature([User, AuthAudit, NotificationSettings]),
-    CacheModule.registerAsync({
-      isGlobal: true,
-      imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        store: await redisStore({
-          socket: {
-            host: configService.get<string>('REDIS_HOST'),
-            port: configService.get<number>('REDIS_PORT'),
-          },
-          ttl: 3600000, // 1 hour
-        }),
-      }),
-      inject: [ConfigService],
-    }),
     MessageBrokerModule.forRoot(),
     CommonModule,
     WinstonModule.forRoot(winstonLoggerConfig),
