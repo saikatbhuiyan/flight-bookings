@@ -9,11 +9,11 @@ import { RefreshTokenIdsStorage } from './authentication/refresh-token-ids.stora
 import { AuthAuditService } from './authentication/auth-audit.service';
 import { RefreshTokenBlacklist } from './authentication/refresh-token-black-list.storage';
 import {
-  AuthAudit,
   DatabaseModule,
-  NotificationSettings,
-  User,
 } from '@app/database';
+import { User } from './entities/user.entity';
+import { AuthAudit } from './entities/auth-audit.entity';
+import { NotificationSettings } from './entities/notification-settings.entity';
 import {
   AccessTokenGuard,
   AuthenticationGuard,

@@ -14,7 +14,7 @@ import { RefreshTokenBlacklist } from './refresh-token-black-list.storage';
 import { AuthAuditService } from './auth-audit.service';
 import { SignInDto, SignOutDto, RefreshTokenDto, SignUpDto } from '@app/common';
 import { Role, InvalidateRefreshTokenError } from '@app/common';
-import { User } from '@app/database';
+import { User } from '../entities/user.entity';
 
 @Injectable()
 export class AuthenticationService {

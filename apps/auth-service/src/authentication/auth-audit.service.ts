@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { AuthAudit } from '@app/database';
+import { AuthAudit } from '../entities/auth-audit.entity';
 
 @Injectable()
 export class AuthAuditService {
   constructor(
     @InjectRepository(AuthAudit)
     private readonly auditRepository: Repository<AuthAudit>,
-  ) {}
+  ) { }
 
   async logSignInAttempt(
     userId: number | null,
