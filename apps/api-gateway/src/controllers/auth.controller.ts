@@ -31,7 +31,7 @@ import {
   RefreshTokenDto,
   SignOutDto,
 } from '@app/common';
-import { RateLimit } from '../rate-limiter/decorators/rate-limit.decorator';
+import { RateLimit } from '@app/rate-limiter';
 
 interface AuthTokens {
   accessToken: string;

@@ -11,9 +11,8 @@ import {
 import { WinstonModule } from 'nest-winston';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { Booking } from './entities/booking.entity';
-import { BookingServiceController } from './booking-service.controller';
-import { BookingServiceService } from './booking-service.service';
 import { LoggingInterceptor } from '@app/common';
+import { BookingController } from './booking/booking.controller';
 
 @Module({
   imports: [
@@ -27,7 +26,7 @@ import { LoggingInterceptor } from '@app/common';
     WinstonModule.forRoot(winstonLoggerConfig),
     HealthModule,
   ],
-  controllers: [BookingServiceController],
+  controllers: [BookingController],
   providers: [
     {
       provide: APP_INTERCEPTOR,
@@ -37,7 +36,6 @@ import { LoggingInterceptor } from '@app/common';
       provide: APP_FILTER,
       useClass: GlobalExceptionFilter,
     },
-    BookingServiceService,
   ],
 })
 export class BookingServiceModule { }

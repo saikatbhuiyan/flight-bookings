@@ -6,8 +6,7 @@ import { AppModule } from './app.module';
 import helmet from 'helmet';
 import * as compression from 'compression';
 import * as cookieParser from 'cookie-parser';
-import { RateLimiterService } from './rate-limiter/rate-limiter.service';
-import { RateLimiterGuard } from './rate-limiter/rate-limiter.guard';
+import { RateLimiterService, RateLimiterGuard } from '@app/rate-limiter';
 
 async function bootstrap() {
   const logger = new Logger('APIGateway');

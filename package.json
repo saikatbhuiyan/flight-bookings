@@ -141,7 +141,8 @@
             "^@app/common(|/.*)$": "<rootDir>/libs/common/src/$1",
             "^@app/database(|/.*)$": "<rootDir>/libs/database/src/$1",
             "^@app/message-broker(|/.*)$": "<rootDir>/libs/message-broker/src/$1",
-            "^@app/storage(|/.*)$": "<rootDir>/libs/storage/src/$1"
+            "^@app/storage(|/.*)$": "<rootDir>/libs/storage/src/$1",
+            "^@app/seat-lock(|/.*)$": "<rootDir>/libs/seat-lock/src/$1"
         }
     }
 }

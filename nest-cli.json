@@ -6,7 +6,9 @@
   "compilerOptions": {
     "webpack": true,
     "tsConfigPath": "apps/api-gateway/tsconfig.app.json",
-    "plugins": ["@nestjs/swagger/plugin"]
+    "plugins": [
+      "@nestjs/swagger/plugin"
+    ]
   },
   "projects": {
     "api-gateway": {
@@ -52,6 +54,15 @@
       "sourceRoot": "apps/notification-service/src",
       "compilerOptions": {
         "tsConfigPath": "apps/notification-service/tsconfig.app.json"
+      }
+    },
+    "rate-limiter": {
+      "type": "library",
+      "root": "libs/rate-limiter",
+      "entryFile": "index",
+      "sourceRoot": "libs/rate-limiter/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/rate-limiter/tsconfig.lib.json"
       }
     }
   }
