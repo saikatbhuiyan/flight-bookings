@@ -19,7 +19,6 @@ async function bootstrap() {
 
   app.useGlobalGuards(new RateLimiterGuard(reflector, rateLimiterService));
 
-
   // Security
   app.use(helmet());
   app.use(cookieParser());
@@ -51,7 +50,7 @@ async function bootstrap() {
     .setTitle('Flight Booking API Gateway')
     .setDescription(
       'The API Gateway for the Flight Booking Microservices System. ' +
-      'This API provides endpoints for user authentication, flight search, and booking management.',
+        'This API provides endpoints for user authentication, flight search, and booking management.',
     )
     .setVersion('1.0')
     .addBearerAuth(

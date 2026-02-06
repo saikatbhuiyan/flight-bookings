@@ -30,7 +30,7 @@ import { EventEmitterModule, EventEmitter2 } from '@nestjs/event-emitter';
     CommonModule,
     WinstonModule.forRoot(winstonLoggerConfig),
     HealthModule,
-    EventEmitterModule
+    EventEmitterModule,
   ],
   controllers: [BookingController],
   providers: [
@@ -46,7 +46,7 @@ import { EventEmitterModule, EventEmitter2 } from '@nestjs/event-emitter';
     BookingSagaOrchestrator,
     BookingRepository,
     SeatLockService,
-    EventEmitter2
+    EventEmitter2,
   ],
 })
-export class BookingServiceModule { }
+export class BookingServiceModule {}

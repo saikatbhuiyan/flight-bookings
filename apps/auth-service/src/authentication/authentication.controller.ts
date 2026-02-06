@@ -31,7 +31,7 @@ import { Request } from 'express';
 export class AuthMessageController {
   private readonly logger = new Logger(AuthMessageController.name);
 
-  constructor(private readonly authService: AuthenticationService) { }
+  constructor(private readonly authService: AuthenticationService) {}
 
   @Public()
   @Post('register')

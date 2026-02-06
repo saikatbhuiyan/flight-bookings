@@ -54,4 +54,4 @@ import { FlightModule } from './modules/flight/flight.module';
     },
   ],
 })
-export class FlightServiceModule { }
+export class FlightServiceModule {}

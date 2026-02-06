@@ -8,7 +8,7 @@ export class AuthAuditService {
   constructor(
     @InjectRepository(AuthAudit)
     private readonly auditRepository: Repository<AuthAudit>,
-  ) { }
+  ) {}
 
   async logSignInAttempt(
     userId: number | null,

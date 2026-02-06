@@ -1,10 +1,9 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class SeedInitialData1769475507497 implements MigrationInterface {
-
-    public async up(queryRunner: QueryRunner): Promise<void> {
-        // Insert Cities
-        await queryRunner.query(`
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    // Insert Cities
+    await queryRunner.query(`
       INSERT INTO cities (name, country, timezone) VALUES
       ('New York', 'USA', 'America/New_York'),
       ('Los Angeles', 'USA', 'America/Los_Angeles'),
@@ -17,8 +16,8 @@ export class SeedInitialData1769475507497 implements MigrationInterface {
       ('Dhaka', 'Bangladesh', 'Asia/Dhaka');
     `);
 
-        // Insert Airports
-        await queryRunner.query(`
+    // Insert Airports
+    await queryRunner.query(`
       INSERT INTO airports (name, code, icao_code, address, latitude, longitude, city_id) VALUES
       ('John F. Kennedy International Airport', 'JFK', 'KJFK', 'Queens, NY 11430', 40.6413, -73.7781, (SELECT id FROM cities WHERE name = 'New York')),
       ('Los Angeles International Airport', 'LAX', 'KLAX', 'Los Angeles, CA 90045', 33.9416, -118.4085, (SELECT id FROM cities WHERE name = 'Los Angeles')),
@@ -31,8 +30,8 @@ export class SeedInitialData1769475507497 implements MigrationInterface {
       ('Hazrat Shahjalal International Airport', 'DAC', 'VGHS', 'Dhaka 1229', 23.8433, 90.3978, (SELECT id FROM cities WHERE name = 'Dhaka'));
     `);
 
-        // Insert Airplanes
-        await queryRunner.query(`
+    // Insert Airplanes
+    await queryRunner.query(`
       INSERT INTO airplanes (
         model_number, manufacturer, total_capacity, 
         economy_seats, business_seats, first_class_seats, premium_economy_seats,
@@ -45,8 +44,8 @@ export class SeedInitialData1769475507497 implements MigrationInterface {
       ('787-9', 'Boeing', 296, 234, 48, 6, 8, 2022, 'N22222', true);
     `);
 
-        // Insert Seats for first airplane (737-800 - N12345)
-        await queryRunner.query(`
+    // Insert Seats for first airplane (737-800 - N12345)
+    await queryRunner.query(`
       INSERT INTO seats (airplane_id, row, col, type)
       SELECT (SELECT id FROM airplanes WHERE registration_number = 'N12345'), r, c, 'FIRST_CLASS'::seat_type
       FROM generate_series(1, 4) AS r, unnest(ARRAY['A', 'B', 'C', 'D', 'E', 'F']) AS c
@@ -58,8 +57,8 @@ export class SeedInitialData1769475507497 implements MigrationInterface {
       FROM generate_series(8, 35) AS r, unnest(ARRAY['A', 'B', 'C', 'D', 'E', 'F']) AS c;
     `);
 
-        // Insert Flights
-        await queryRunner.query(`
+    // Insert Flights
+    await queryRunner.query(`
       INSERT INTO flights (
         flight_number, airplane_id, 
         departure_airport_id, arrival_airport_id,
@@ -131,14 +130,13 @@ export class SeedInitialData1769475507497 implements MigrationInterface {
         'SCHEDULED'
       );
     `);
-    }
+  }
 
-    public async down(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`DELETE FROM flights`);
-        await queryRunner.query(`DELETE FROM seats`);
-        await queryRunner.query(`DELETE FROM airplanes`);
-        await queryRunner.query(`DELETE FROM airports`);
-        await queryRunner.query(`DELETE FROM cities`);
-    }
-
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`DELETE FROM flights`);
+    await queryRunner.query(`DELETE FROM seats`);
+    await queryRunner.query(`DELETE FROM airplanes`);
+    await queryRunner.query(`DELETE FROM airports`);
+    await queryRunner.query(`DELETE FROM cities`);
+  }
 }

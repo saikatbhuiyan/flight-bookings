@@ -4,10 +4,10 @@ import { randomUUID } from 'crypto';
 
 @Injectable()
 export class CorrelationIdMiddleware implements NestMiddleware {
-    use(req: Request, res: Response, next: NextFunction) {
-        const id = (req.headers['x-correlation-id'] as string) || randomUUID();
-        req['correlationId'] = id;
-        res.setHeader('x-correlation-id', id);
-        next();
-    }
+  use(req: Request, res: Response, next: NextFunction) {
+    const id = (req.headers['x-correlation-id'] as string) || randomUUID();
+    req['correlationId'] = id;
+    res.setHeader('x-correlation-id', id);
+    next();
+  }
 }

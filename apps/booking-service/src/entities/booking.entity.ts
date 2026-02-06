@@ -5,7 +5,6 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Index,
-  BeforeInsert,
   VersionColumn,
 } from 'typeorm';
 
@@ -49,7 +48,7 @@ export class Booking {
     type: 'varchar',
     length: 10,
     nullable: false,
-    unique: true
+    unique: true,
   })
   bookingReference: string;
 
@@ -62,7 +61,13 @@ export class Booking {
   @Column({ name: 'no_of_seats', type: 'int', nullable: false, default: 1 })
   noOfSeats: number;
 
-  @Column({ name: 'total_cost', type: 'decimal', precision: 10, scale: 2, nullable: false })
+  @Column({
+    name: 'total_cost',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: false,
+  })
   totalCost: number;
 
   @Column({
@@ -82,29 +87,67 @@ export class Booking {
   })
   paymentStatus: PaymentStatus;
 
-  @Column({ name: 'passenger_name', type: 'varchar', length: 200, nullable: true })
+  @Column({
+    name: 'passenger_name',
+    type: 'varchar',
+    length: 200,
+    nullable: true,
+  })
   passengerName: string;
 
-  @Column({ name: 'passenger_email', type: 'varchar', length: 255, nullable: true })
+  @Column({
+    name: 'passenger_email',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
   passengerEmail: string;
 
-  @Column({ name: 'passenger_phone', type: 'varchar', length: 20, nullable: true })
+  @Column({
+    name: 'passenger_phone',
+    type: 'varchar',
+    length: 20,
+    nullable: true,
+  })
   passengerPhone: string;
 
   // Denormalized flight data (snapshot at booking time)
-  @Column({ name: 'flight_number', type: 'varchar', length: 20, nullable: true })
+  @Column({
+    name: 'flight_number',
+    type: 'varchar',
+    length: 20,
+    nullable: true,
+  })
   flightNumber: string;
 
-  @Column({ name: 'departure_airport_code', type: 'varchar', length: 3, nullable: true })
+  @Column({
+    name: 'departure_airport_code',
+    type: 'varchar',
+    length: 3,
+    nullable: true,
+  })
   departureAirportCode: string;
 
-  @Column({ name: 'arrival_airport_code', type: 'varchar', length: 3, nullable: true })
+  @Column({
+    name: 'arrival_airport_code',
+    type: 'varchar',
+    length: 3,
+    nullable: true,
+  })
   arrivalAirportCode: string;
 
-  @Column({ name: 'departure_time', type: 'timestamp with time zone', nullable: true })
+  @Column({
+    name: 'departure_time',
+    type: 'timestamp with time zone',
+    nullable: true,
+  })
   departureTime: Date;
 
-  @Column({ name: 'arrival_time', type: 'timestamp with time zone', nullable: true })
+  @Column({
+    name: 'arrival_time',
+    type: 'timestamp with time zone',
+    nullable: true,
+  })
   arrivalTime: Date;
 
   // Seat information
@@ -120,30 +163,58 @@ export class Booking {
   seatClass: string; // ECONOMY, BUSINESS, FIRST_CLASS
 
   // Payment details
-  @Column({ name: 'payment_method', type: 'varchar', length: 50, nullable: true })
+  @Column({
+    name: 'payment_method',
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+  })
   paymentMethod: string;
 
-  @Column({ name: 'payment_transaction_id', type: 'varchar', length: 100, nullable: true })
+  @Column({
+    name: 'payment_transaction_id',
+    type: 'varchar',
+    length: 100,
+    nullable: true,
+  })
   paymentTransactionId: string;
 
   @Column({ name: 'paid_at', type: 'timestamp with time zone', nullable: true })
   paidAt: Date;
 
   // Cancellation tracking
-  @Column({ name: 'cancelled_at', type: 'timestamp with time zone', nullable: true })
+  @Column({
+    name: 'cancelled_at',
+    type: 'timestamp with time zone',
+    nullable: true,
+  })
   cancelledAt: Date;
 
   @Column({ name: 'cancellation_reason', type: 'text', nullable: true })
   cancellationReason: string;
 
-  @Column({ name: 'refund_amount', type: 'decimal', precision: 10, scale: 2, nullable: true })
+  @Column({
+    name: 'refund_amount',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+  })
   refundAmount: number;
 
-  @Column({ name: 'refunded_at', type: 'timestamp with time zone', nullable: true })
+  @Column({
+    name: 'refunded_at',
+    type: 'timestamp with time zone',
+    nullable: true,
+  })
   refundedAt: Date;
 
   // Expiry for pending bookings (15 minutes hold)
-  @Column({ name: 'expires_at', type: 'timestamp with time zone', nullable: true })
+  @Column({
+    name: 'expires_at',
+    type: 'timestamp with time zone',
+    nullable: true,
+  })
   expiresAt: Date;
 
   // Optimistic locking to prevent race conditions
@@ -151,7 +222,12 @@ export class Booking {
   version: number;
 
   // Metadata
-  @Column({ name: 'booking_source', type: 'varchar', length: 50, nullable: true })
+  @Column({
+    name: 'booking_source',
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+  })
   bookingSource: string;
 
   @Column({ name: 'ip_address', type: 'inet', nullable: true })

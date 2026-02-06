@@ -2,61 +2,60 @@ import { RedisService } from '@app/common';
 import { Injectable, Logger } from '@nestjs/common';
 
 export interface SeatLockResult {
-    success: boolean;
-    lockedSeats: string[];
-    failedSeats: string[];
-    lockKey: string;
-    expiresAt: Date;
+  success: boolean;
+  lockedSeats: string[];
+  failedSeats: string[];
+  lockKey: string;
+  expiresAt: Date;
 }
 
 @Injectable()
 export class SeatLockService {
-    private readonly logger = new Logger(SeatLockService.name);
+  private readonly logger = new Logger(SeatLockService.name);
 
-    private readonly LOCK_TTL = 900; // 15 minutes
+  private readonly LOCK_TTL = 900; // 15 minutes
 
-    constructor(private readonly redisService: RedisService) { }
+  constructor(private readonly redisService: RedisService) {}
 
-    async lockSeats(
-        flightId: number,
-        seats: string[],
-        bookingId: string,
-        userId: number,
-    ): Promise<SeatLockResult> {
+  async lockSeats(
+    flightId: number,
+    seats: string[],
+    bookingId: string,
+    userId: number,
+  ): Promise<SeatLockResult> {
+    const redis = this.redisService.getClient();
+    const timestamp = Date.now();
 
-        const redis = this.redisService.getClient();
-        const timestamp = Date.now();
+    // ------------------------------------------
+    // 1. Seat validation (DB or cache hook)
+    // ------------------------------------------
+    await this.validateSeatsExist(flightId, seats);
 
-        // ------------------------------------------
-        // 1. Seat validation (DB or cache hook)
-        // ------------------------------------------
-        await this.validateSeatsExist(flightId, seats);
+    // ------------------------------------------
+    // 2. Idempotency check
+    // ------------------------------------------
+    const bookingKey = this.getBookingKey(flightId, bookingId);
+    const existing = await redis.get(bookingKey);
 
-        // ------------------------------------------
-        // 2. Idempotency check
-        // ------------------------------------------
-        const bookingKey = this.getBookingKey(flightId, bookingId);
-        const existing = await redis.get(bookingKey);
+    if (existing) {
+      const parsed = JSON.parse(existing);
+      this.logger.warn(`Idempotent booking lock reuse ${bookingId}`);
 
-        if (existing) {
-            const parsed = JSON.parse(existing);
-            this.logger.warn(`Idempotent booking lock reuse ${bookingId}`);
+      return {
+        success: true,
+        lockedSeats: parsed.seats,
+        failedSeats: [],
+        lockKey: bookingKey,
+        expiresAt: new Date(parsed.timestamp + this.LOCK_TTL * 1000),
+      };
+    }
 
-            return {
-                success: true,
-                lockedSeats: parsed.seats,
-                failedSeats: [],
-                lockKey: bookingKey,
-                expiresAt: new Date(parsed.timestamp + this.LOCK_TTL * 1000),
-            };
-        }
+    const expiresAt = new Date(timestamp + this.LOCK_TTL * 1000);
 
-        const expiresAt = new Date(timestamp + this.LOCK_TTL * 1000);
-
-        // ------------------------------------------
-        // 3. Cluster-safe Lua script
-        // ------------------------------------------
-        const luaScript = `
+    // ------------------------------------------
+    // 3. Cluster-safe Lua script
+    // ------------------------------------------
+    const luaScript = `
             local flight_id = ARGV[1]
             local booking_id = ARGV[2]
             local user_id = ARGV[3]
@@ -117,164 +116,160 @@ export class SeatLockService {
             end
         `;
 
-        const result = await redis.eval(
-            luaScript,
-            0,
-            flightId.toString(),
-            bookingId,
-            userId.toString(),
-            this.LOCK_TTL.toString(),
-            timestamp.toString(),
-            ...seats,
-        ) as [number, string, string];
+    const result = (await redis.eval(
+      luaScript,
+      0,
+      flightId.toString(),
+      bookingId,
+      userId.toString(),
+      this.LOCK_TTL.toString(),
+      timestamp.toString(),
+      ...seats,
+    )) as [number, string, string];
 
-        const [success, lockedSeatsJson, failedSeatsJson] = result;
+    const [success, lockedSeatsJson, failedSeatsJson] = result;
 
-        const lockedSeats = JSON.parse(lockedSeatsJson);
-        const failedSeats = JSON.parse(failedSeatsJson);
+    const lockedSeats = JSON.parse(lockedSeatsJson);
+    const failedSeats = JSON.parse(failedSeatsJson);
 
-        if (success === 1) {
-            this.logger.log(`Locked ${lockedSeats.length} seats for ${bookingId}`);
+    if (success === 1) {
+      this.logger.log(`Locked ${lockedSeats.length} seats for ${bookingId}`);
 
-            return {
-                success: true,
-                lockedSeats,
-                failedSeats: [],
-                lockKey: bookingKey,
-                expiresAt,
-            };
-        }
-
-        return {
-            success: false,
-            lockedSeats: [],
-            failedSeats,
-            lockKey: '',
-            expiresAt: new Date(),
-        };
+      return {
+        success: true,
+        lockedSeats,
+        failedSeats: [],
+        lockKey: bookingKey,
+        expiresAt,
+      };
     }
 
-    // =============================================
-    // RELEASE LOCKS (Ownership Safe)
-    // =============================================
+    return {
+      success: false,
+      lockedSeats: [],
+      failedSeats,
+      lockKey: '',
+      expiresAt: new Date(),
+    };
+  }
 
-    async releaseSeats(flightId: number, bookingId: string): Promise<void> {
-        const redis = this.redisService.getClient();
+  // =============================================
+  // RELEASE LOCKS (Ownership Safe)
+  // =============================================
 
-        const bookingKey = this.getBookingKey(flightId, bookingId);
-        const bookingData = await redis.get(bookingKey);
+  async releaseSeats(flightId: number, bookingId: string): Promise<void> {
+    const redis = this.redisService.getClient();
 
-        if (!bookingData) return;
+    const bookingKey = this.getBookingKey(flightId, bookingId);
+    const bookingData = await redis.get(bookingKey);
 
-        const parsed = JSON.parse(bookingData);
+    if (!bookingData) return;
 
-        const pipeline = redis.pipeline();
+    const parsed = JSON.parse(bookingData);
 
-        parsed.seats.forEach((seat: string) => {
-            pipeline.del(this.getSeatKey(flightId, seat));
-        });
+    const pipeline = redis.pipeline();
 
-        pipeline.del(bookingKey);
+    parsed.seats.forEach((seat: string) => {
+      pipeline.del(this.getSeatKey(flightId, seat));
+    });
 
-        await pipeline.exec();
+    pipeline.del(bookingKey);
 
-        this.logger.log(`Released seats for booking ${bookingId}`);
+    await pipeline.exec();
+
+    this.logger.log(`Released seats for booking ${bookingId}`);
+  }
+
+  // =============================================
+  // EXTEND LOCK (Fixed TTL Extension)
+  // =============================================
+
+  async extendLock(
+    flightId: number,
+    bookingId: string,
+    additionalSeconds = 300,
+  ): Promise<boolean> {
+    const redis = this.redisService.getClient();
+    const bookingKey = this.getBookingKey(flightId, bookingId);
+
+    const bookingData = await redis.get(bookingKey);
+    if (!bookingData) return false;
+
+    const parsed = JSON.parse(bookingData);
+
+    const pipeline = redis.pipeline();
+
+    for (const seat of parsed.seats) {
+      const seatKey = this.getSeatKey(flightId, seat);
+      const ttl = await redis.ttl(seatKey);
+
+      if (ttl > 0) {
+        pipeline.expire(seatKey, ttl + additionalSeconds);
+      }
     }
 
-    // =============================================
-    // EXTEND LOCK (Fixed TTL Extension)
-    // =============================================
-
-    async extendLock(
-        flightId: number,
-        bookingId: string,
-        additionalSeconds = 300,
-    ): Promise<boolean> {
-
-        const redis = this.redisService.getClient();
-        const bookingKey = this.getBookingKey(flightId, bookingId);
-
-        const bookingData = await redis.get(bookingKey);
-        if (!bookingData) return false;
-
-        const parsed = JSON.parse(bookingData);
-
-        const pipeline = redis.pipeline();
-
-        for (const seat of parsed.seats) {
-
-            const seatKey = this.getSeatKey(flightId, seat);
-            const ttl = await redis.ttl(seatKey);
-
-            if (ttl > 0) {
-                pipeline.expire(seatKey, ttl + additionalSeconds);
-            }
-        }
-
-        const bookingTTL = await redis.ttl(bookingKey);
-        if (bookingTTL > 0) {
-            pipeline.expire(bookingKey, bookingTTL + additionalSeconds);
-        }
-
-        await pipeline.exec();
-
-        return true;
+    const bookingTTL = await redis.ttl(bookingKey);
+    if (bookingTTL > 0) {
+      pipeline.expire(bookingKey, bookingTTL + additionalSeconds);
     }
 
-    // =============================================
-    // CHECK LOCK STATUS
-    // =============================================
+    await pipeline.exec();
 
-    async areSeatsLocked(
-        flightId: number,
-        seats: string[],
-    ): Promise<Map<string, boolean>> {
+    return true;
+  }
 
-        const redis = this.redisService.getClient();
-        const pipeline = redis.pipeline();
+  // =============================================
+  // CHECK LOCK STATUS
+  // =============================================
 
-        seats.forEach(seat => {
-            pipeline.get(this.getSeatKey(flightId, seat));
-        });
+  async areSeatsLocked(
+    flightId: number,
+    seats: string[],
+  ): Promise<Map<string, boolean>> {
+    const redis = this.redisService.getClient();
+    const pipeline = redis.pipeline();
 
-        const responses = await pipeline.exec();
+    seats.forEach((seat) => {
+      pipeline.get(this.getSeatKey(flightId, seat));
+    });
 
-        const result = new Map<string, boolean>();
+    const responses = await pipeline.exec();
 
-        seats.forEach((seat, i) => {
-            result.set(seat, responses[i][1] !== null);
-        });
+    const result = new Map<string, boolean>();
 
-        return result;
+    seats.forEach((seat, i) => {
+      result.set(seat, responses[i][1] !== null);
+    });
+
+    return result;
+  }
+
+  // =============================================
+  // HELPER METHODS
+  // =============================================
+
+  private getSeatKey(flightId: number, seat: string) {
+    return `seat:lock:{${flightId}}:${seat}`;
+  }
+
+  private getBookingKey(flightId: number, bookingId: string) {
+    return `seat:lock:booking:{${flightId}}:${bookingId}`;
+  }
+
+  // ---------------------------------------------
+  // Seat validation hook
+  // Replace with DB or seat service
+  // ---------------------------------------------
+  private async validateSeatsExist(
+    flightId: number,
+    seats: string[],
+  ): Promise<void> {
+    // TODO: Replace with DB lookup or cache
+    // Example:
+    // const validSeats = await flightSeatRepo.find()
+
+    if (!seats.length) {
+      throw new Error('No seats provided');
     }
-
-    // =============================================
-    // HELPER METHODS
-    // =============================================
-
-    private getSeatKey(flightId: number, seat: string) {
-        return `seat:lock:{${flightId}}:${seat}`;
-    }
-
-    private getBookingKey(flightId: number, bookingId: string) {
-        return `seat:lock:booking:{${flightId}}:${bookingId}`;
-    }
-
-    // ---------------------------------------------
-    // Seat validation hook
-    // Replace with DB or seat service
-    // ---------------------------------------------
-    private async validateSeatsExist(
-        flightId: number,
-        seats: string[],
-    ): Promise<void> {
-
-        // TODO: Replace with DB lookup or cache
-        // Example:
-        // const validSeats = await flightSeatRepo.find()
-
-        if (!seats.length) {
-            throw new Error('No seats provided');
-        }
-    }
+  }
 }

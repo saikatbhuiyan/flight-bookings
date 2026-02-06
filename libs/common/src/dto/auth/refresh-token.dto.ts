@@ -8,7 +8,10 @@ export class RefreshTokenDto {
   @IsNotEmpty()
   refreshToken: string;
 
-  @ApiPropertyOptional({ example: '1234', description: 'Unique device identifier' })
+  @ApiPropertyOptional({
+    example: '1234',
+    description: 'Unique device identifier',
+  })
   @IsString()
   deviceId?: string = '1234';
 

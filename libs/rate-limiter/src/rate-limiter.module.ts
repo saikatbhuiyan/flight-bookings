@@ -6,8 +6,8 @@ import { RateLimiterService } from './rate-limiter.service';
 
 @Global()
 @Module({
-    imports: [ConfigModule, RedisModule],
-    providers: [RateLimiterService, RateLimiterGuard],
-    exports: [RateLimiterService, RateLimiterGuard],
+  imports: [ConfigModule, RedisModule],
+  providers: [RateLimiterService, RateLimiterGuard],
+  exports: [RateLimiterService, RateLimiterGuard],
 })
-export class RateLimiterModule { }
+export class RateLimiterModule {}

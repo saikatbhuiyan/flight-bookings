@@ -7,12 +7,9 @@ import { SeatRepository } from './repositories/seat.repository';
 import { AirplaneModule } from '../airplane/airplane.module';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([Seat]),
-        AirplaneModule,
-    ],
-    controllers: [SeatController],
-    providers: [SeatService, SeatRepository],
-    exports: [SeatService, SeatRepository],
+  imports: [TypeOrmModule.forFeature([Seat]), AirplaneModule],
+  controllers: [SeatController],
+  providers: [SeatService, SeatRepository],
+  exports: [SeatService, SeatRepository],
 })
-export class SeatModule { }
+export class SeatModule {}

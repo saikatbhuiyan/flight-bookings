@@ -20,13 +20,16 @@ export class HealthController {
     private readonly memory: MemoryHealthIndicator,
     private readonly rabbitmq: RabbitMQHealthIndicator,
     private readonly redis: RedisHealthIndicator,
-  ) { }
+  ) {}
 
   @Get()
   @HealthCheck()
   @ApiOperation({ summary: 'Check overall system health' })
   @ApiResponse({ status: 200, description: 'System is healthy' })
-  @ApiResponse({ status: 503, description: 'One or more services are unhealthy' })
+  @ApiResponse({
+    status: 503,
+    description: 'One or more services are unhealthy',
+  })
   check() {
     return this.readiness();
   }
@@ -42,7 +45,10 @@ export class HealthController {
   @Get('readiness')
   @HealthCheck()
   @ApiOperation({ summary: 'Check readiness' })
-  @ApiResponse({ status: 200, description: 'Application is ready to handle requests' })
+  @ApiResponse({
+    status: 200,
+    description: 'Application is ready to handle requests',
+  })
   @ApiResponse({ status: 503, description: 'Application is not ready' })
   readiness() {
     return this.health.check([

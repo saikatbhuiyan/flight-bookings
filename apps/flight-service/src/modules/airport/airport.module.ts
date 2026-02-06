@@ -7,12 +7,12 @@ import { AirportRepository } from './repositories/airport.repository';
 import { CityModule } from '../city/city.module';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([Airport]),
-        CityModule, // Import to access CityRepository
-    ],
-    controllers: [AirportController],
-    providers: [AirportService, AirportRepository],
-    exports: [AirportService, AirportRepository],
+  imports: [
+    TypeOrmModule.forFeature([Airport]),
+    CityModule, // Import to access CityRepository
+  ],
+  controllers: [AirportController],
+  providers: [AirportService, AirportRepository],
+  exports: [AirportService, AirportRepository],
 })
-export class AirportModule { }
+export class AirportModule {}

@@ -27,7 +27,7 @@ export class AuthenticationService {
     private readonly refreshTokenIdsStorage: RefreshTokenIdsStorage,
     private readonly refreshTokenBlacklist: RefreshTokenBlacklist,
     private readonly auditService: AuthAuditService,
-  ) { }
+  ) {}
 
   async register(registerDto: SignUpDto) {
     const existingUser = await this.usersRepository.findOne({
