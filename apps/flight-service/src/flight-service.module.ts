@@ -15,8 +15,6 @@ import { City } from './entities/city.entity';
 import { Airport } from './entities/airport.entity';
 import { Airplane } from './entities/airplane.entity';
 import { Seat } from './entities/seat.entity';
-import { FlightServiceController } from './flight-service.controller';
-import { FlightServiceService } from './flight-service.service';
 import { LoggingInterceptor } from '@app/common';
 import { CityModule } from './modules/city/city.module';
 import { AirportModule } from './modules/airport/airport.module';
@@ -44,7 +42,7 @@ import { FlightModule } from './modules/flight/flight.module';
     SeatModule,
     FlightModule,
   ],
-  controllers: [FlightServiceController],
+  controllers: [],
   providers: [
     {
       provide: APP_INTERCEPTOR,
@@ -54,7 +52,6 @@ import { FlightModule } from './modules/flight/flight.module';
       provide: APP_FILTER,
       useClass: GlobalExceptionFilter,
     },
-    FlightServiceService,
   ],
 })
 export class FlightServiceModule { }

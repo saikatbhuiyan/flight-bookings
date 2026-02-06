@@ -13,6 +13,11 @@ import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { Booking } from './entities/booking.entity';
 import { LoggingInterceptor } from '@app/common';
 import { BookingController } from './booking/booking.controller';
+import { BookingService } from './booking/booking.service';
+import { BookingSagaOrchestrator } from './booking-saga/booking-saga.orchestrator';
+import { BookingRepository } from './repositories/booking.repository';
+import { SeatLockService } from '@app/seat-lock';
+import { EventEmitterModule, EventEmitter2 } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
@@ -20,11 +25,12 @@ import { BookingController } from './booking/booking.controller';
       isGlobal: true,
       envFilePath: '.env',
     }),
-    DatabaseModule.forRoot([Booking], ['apps/booking-service/src/migrations/*.ts']),
+    DatabaseModule.forRoot([Booking], [__dirname + '/migrations/*.{ts,js}']),
     TypeOrmModule.forFeature([Booking]),
     CommonModule,
     WinstonModule.forRoot(winstonLoggerConfig),
     HealthModule,
+    EventEmitterModule
   ],
   controllers: [BookingController],
   providers: [
@@ -36,6 +42,11 @@ import { BookingController } from './booking/booking.controller';
       provide: APP_FILTER,
       useClass: GlobalExceptionFilter,
     },
+    BookingService,
+    BookingSagaOrchestrator,
+    BookingRepository,
+    SeatLockService,
+    EventEmitter2
   ],
 })
 export class BookingServiceModule { }

@@ -2,8 +2,10 @@ import {
     Controller,
     Get,
     Post,
+    Put,
     Body,
     Param,
+    Query,
     HttpStatus,
     Inject,
     HttpException,
@@ -41,21 +43,80 @@ export class BookingController {
             ...createDto,
             userId: user.id,
         });
-        return ApiResponseDto.success(result, 'Booking created successfully');
+        return ApiResponseDto.success(result, 'Booking initiated successfully');
     }
 
-    @Get(':id')
-    @ApiOperation({ summary: 'Get booking details by ID' })
-    @ApiParam({ name: 'id', description: 'Booking ID (UUID)' })
-    @ApiResponse({
-        status: HttpStatus.OK,
-        description: 'Returns the booking details',
-        type: ApiResponseDto,
-    })
-    @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Booking not found' })
-    async getBookingById(@Param('id') id: string) {
-        const result = await this.callService(MP.BOOKING_FIND_BY_ID, { id });
+    @Post(':bookingId/complete')
+    @ApiOperation({ summary: 'Complete booking after payment' })
+    async completeBooking(
+        @Param('bookingId') bookingId: string,
+        @Body() paymentDto: { paymentTransactionId: string },
+        @CurrentUser() user: any,
+    ) {
+        const result = await this.callService(MP.BOOKING_COMPLETE, {
+            bookingId,
+            userId: user.id,
+            paymentTransactionId: paymentDto.paymentTransactionId,
+        });
+        return ApiResponseDto.success(result, 'Booking confirmed successfully');
+    }
+
+    @Put(':bookingId/cancel')
+    @ApiOperation({ summary: 'Cancel a booking' })
+    async cancelBooking(
+        @Param('bookingId') bookingId: string,
+        @Body() cancelDto: { reason?: string },
+        @CurrentUser() user: any,
+    ) {
+        const result = await this.callService(MP.BOOKING_CANCEL, {
+            bookingId,
+            userId: user.id,
+            reason: cancelDto.reason,
+        });
+        return ApiResponseDto.success(result, 'Booking cancelled successfully');
+    }
+
+    @Put(':bookingId/extend')
+    @ApiOperation({ summary: 'Extend booking expiry' })
+    async extendBooking(@Param('bookingId') bookingId: string, @CurrentUser() user: any) {
+        const result = await this.callService(MP.BOOKING_EXTEND, {
+            bookingId,
+            userId: user.id,
+        });
+        return ApiResponseDto.success(result, 'Booking extended successfully');
+    }
+
+    @Get('my-bookings')
+    @ApiOperation({ summary: 'Get my bookings' })
+    async getMyBookings(@CurrentUser() user: any) {
+        const result = await this.callService(MP.BOOKING_FIND_BY_USER, {
+            userId: user.id,
+        });
+        return ApiResponseDto.success(result, 'Bookings retrieved successfully');
+    }
+
+    @Get(':bookingId')
+    @ApiOperation({ summary: 'Get booking details' })
+    @ApiParam({ name: 'bookingId', description: 'Booking ID' })
+    async getBooking(@Param('bookingId') bookingId: string, @CurrentUser() user: any) {
+        const result = await this.callService(MP.BOOKING_FIND_BY_ID, {
+            bookingId,
+            userId: user.id,
+        });
         return ApiResponseDto.success(result, 'Booking retrieved successfully');
+    }
+
+    @Get('flights/:flightId/seats/availability')
+    @ApiOperation({ summary: 'Check seat availability' })
+    async checkSeatAvailability(
+        @Param('flightId') flightId: number,
+        @Query('seats') seats: string,
+    ) {
+        const result = await this.callService(MP.BOOKING_CHECK_AVAILABILITY, {
+            flightId,
+            seats,
+        });
+        return ApiResponseDto.success(result, 'Availability checked successfully');
     }
 
     private async callService<T>(pattern: string, data: any): Promise<T> {

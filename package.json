@@ -69,7 +69,9 @@
         "class-validator": "^0.14.2",
         "compression": "^1.8.1",
         "cookie-parser": "^1.4.7",
+        "cron": "^4.4.0",
         "dotenv": "^17.2.2",
+        "eventemitter2": "^6.4.9",
         "helmet": "^8.1.0",
         "ioredis": "^5.8.2",
         "joi": "^18.0.1",
@@ -142,7 +144,8 @@
             "^@app/database(|/.*)$": "<rootDir>/libs/database/src/$1",
             "^@app/message-broker(|/.*)$": "<rootDir>/libs/message-broker/src/$1",
             "^@app/storage(|/.*)$": "<rootDir>/libs/storage/src/$1",
-            "^@app/seat-lock(|/.*)$": "<rootDir>/libs/seat-lock/src/$1"
+            "^@app/seat-lock(|/.*)$": "<rootDir>/libs/seat-lock/src/$1",
+            "^@app/rate-limiter(|/.*)$": "<rootDir>/libs/rate-limiter/src/$1"
         }
     }
 }

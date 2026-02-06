@@ -11,10 +11,11 @@ import {
     BadRequestException,
     NotFoundException,
 } from '@nestjs/common';
+import { MessagePattern, Payload } from '@nestjs/microservices';
+import { MessagePattern as MP } from '@app/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { SeatLockService } from '@app/seat-lock';
-import { BookingSagaOrchestrator, CreateBookingDto } from '../booking-saga/booking-saga.orchestrator';
-import { BookingRepository } from '../repositories/booking.repository';
+import { BookingService } from './booking.service';
+import { CreateBookingDto } from '../booking-saga/booking-saga.orchestrator';
 import { RateLimit } from '@app/rate-limiter';
 
 @ApiTags('Bookings')
@@ -22,38 +23,19 @@ import { RateLimit } from '@app/rate-limiter';
 @ApiBearerAuth()
 export class BookingController {
     constructor(
-        private readonly sagaOrchestrator: BookingSagaOrchestrator,
-        private readonly bookingRepository: BookingRepository,
-        private readonly seatLockService: SeatLockService,
+        private readonly bookingService: BookingService,
     ) { }
 
-    /**
-     * Step 1: Initiate booking (lock seats, create pending booking)
-     */
     @Post()
     @RateLimit({ points: 3, duration: 60, blockDuration: 300 })
     @ApiOperation({ summary: 'Create a new booking' })
     async createBooking(@Body() dto: CreateBookingDto, @Req() req: any) {
-        try {
-            const booking = await this.sagaOrchestrator.executeBookingSaga({
-                ...dto,
-                userId: req.user.id,
-            });
-
-            return {
-                success: true,
-                message: 'Booking initiated successfully. Please complete payment within 15 minutes.',
-                data: {
-                    bookingId: booking.bookingReference,
-                    status: booking.status,
-                    expiresAt: booking.expiresAt,
-                    totalCost: booking.totalCost,
-                    paymentRequired: true,
-                },
-            };
-        } catch (error) {
-            throw new BadRequestException(error.message);
-        }
+        const data = await this.bookingService.createBooking(dto, req.user.id);
+        return {
+            success: true,
+            message: 'Booking initiated successfully. Please complete payment within 15 minutes.',
+            data,
+        };
     }
 
     /**
@@ -67,36 +49,16 @@ export class BookingController {
         @Body() paymentDto: { paymentTransactionId: string },
         @Req() req: any,
     ) {
-        try {
-            // Verify booking belongs to user
-            const booking = await this.bookingRepository.findByReference(bookingId);
-            if (!booking) {
-                throw new NotFoundException('Booking not found');
-            }
-
-            if (booking.userId !== req.user.id) {
-                throw new BadRequestException('Unauthorized');
-            }
-
-            const completedBooking = await this.sagaOrchestrator.completeBooking(
-                bookingId,
-                paymentDto.paymentTransactionId,
-            );
-
-            return {
-                success: true,
-                message: 'Booking confirmed successfully!',
-                data: {
-                    bookingId: completedBooking.bookingReference,
-                    status: completedBooking.status,
-                    paymentStatus: completedBooking.paymentStatus,
-                    seatNumbers: completedBooking.seatNumbers,
-                    flightNumber: completedBooking.flightNumber,
-                },
-            };
-        } catch (error) {
-            throw new BadRequestException(error.message);
-        }
+        const data = await this.bookingService.completeBooking(
+            bookingId,
+            req.user.id,
+            paymentDto.paymentTransactionId,
+        );
+        return {
+            success: true,
+            message: 'Booking confirmed successfully!',
+            data,
+        };
     }
 
     /**
@@ -110,33 +72,16 @@ export class BookingController {
         @Body() cancelDto: { reason?: string },
         @Req() req: any,
     ) {
-        try {
-            const booking = await this.bookingRepository.findByReference(bookingId);
-            if (!booking) {
-                throw new NotFoundException('Booking not found');
-            }
-
-            if (booking.userId !== req.user.id) {
-                throw new BadRequestException('Unauthorized');
-            }
-
-            const cancelledBooking = await this.sagaOrchestrator.cancelBooking(
-                bookingId,
-                cancelDto.reason || 'User requested cancellation',
-            );
-
-            return {
-                success: true,
-                message: 'Booking cancelled successfully',
-                data: {
-                    bookingId: cancelledBooking.bookingReference,
-                    status: cancelledBooking.status,
-                    refundAmount: cancelledBooking.refundAmount,
-                },
-            };
-        } catch (error) {
-            throw new BadRequestException(error.message);
-        }
+        const data = await this.bookingService.cancelBooking(
+            bookingId,
+            req.user.id,
+            cancelDto.reason,
+        );
+        return {
+            success: true,
+            message: 'Booking cancelled successfully',
+            data,
+        };
     }
 
     /**
@@ -146,37 +91,12 @@ export class BookingController {
     @RateLimit({ points: 2, duration: 60 })
     @ApiOperation({ summary: 'Extend booking expiry time' })
     async extendBooking(@Param('bookingId') bookingId: string, @Req() req: any) {
-        try {
-            const booking = await this.bookingRepository.findByReference(bookingId);
-            if (!booking) {
-                throw new NotFoundException('Booking not found');
-            }
-
-            if (booking.userId !== req.user.id) {
-                throw new BadRequestException('Unauthorized');
-            }
-
-            const extended = await this.seatLockService.extendLock(booking.flightId, bookingId, 300); // 5 more minutes
-
-            if (!extended) {
-                throw new BadRequestException('Cannot extend booking - locks may have expired');
-            }
-
-            // Update booking expiry in DB
-            booking.expiresAt = new Date(Date.now() + 300 * 1000);
-            await this.bookingRepository.update(booking.id, { expiresAt: booking.expiresAt });
-
-            return {
-                success: true,
-                message: 'Booking extended by 5 minutes',
-                data: {
-                    bookingId,
-                    expiresAt: booking.expiresAt,
-                },
-            };
-        } catch (error) {
-            throw new BadRequestException(error.message);
-        }
+        const data = await this.bookingService.extendBooking(bookingId, req.user.id);
+        return {
+            success: true,
+            message: 'Booking extended by 5 minutes',
+            data,
+        };
     }
 
     /**
@@ -185,11 +105,10 @@ export class BookingController {
     @Get('my-bookings')
     @ApiOperation({ summary: 'Get current user bookings' })
     async getMyBookings(@Req() req: any, @Query('status') status?: string) {
-        const bookings = await this.bookingRepository.findByUserId(req.user.id);
-
+        const data = await this.bookingService.getMyBookings(req.user.id, status);
         return {
             success: true,
-            data: bookings.filter((b) => !status || b.status === status),
+            data,
         };
     }
 
@@ -199,19 +118,10 @@ export class BookingController {
     @Get(':bookingId')
     @ApiOperation({ summary: 'Get booking by ID' })
     async getBooking(@Param('bookingId') bookingId: string, @Req() req: any) {
-        const booking = await this.bookingRepository.findByReference(bookingId);
-
-        if (!booking) {
-            throw new NotFoundException('Booking not found');
-        }
-
-        if (booking.userId !== req.user.id) {
-            throw new BadRequestException('Unauthorized');
-        }
-
+        const data = await this.bookingService.getBooking(bookingId, req.user.id);
         return {
             success: true,
-            data: booking,
+            data,
         };
     }
 
@@ -224,21 +134,49 @@ export class BookingController {
         @Param('flightId') flightId: number,
         @Query('seats') seats: string,
     ) {
-        const seatArray = seats.split(',');
-        const lockedSeats = await this.seatLockService.areSeatsLocked(flightId, seatArray);
-
-        const availability = Array.from(lockedSeats.entries()).map(([seat, locked]) => ({
-            seat,
-            available: !locked,
-        }));
-
+        const data = await this.bookingService.checkSeatAvailability(flightId, seats);
         return {
             success: true,
-            data: {
-                flightId,
-                seats: availability,
-                allAvailable: availability.every((s) => s.available),
-            },
+            data,
         };
+    }
+
+    // ============================================
+    // MESSAGE HANDLERS (for API Gateway via RMQ)
+    // ============================================
+
+    @MessagePattern(MP.BOOKING_CREATE)
+    async handleCreateBooking(@Payload() data: CreateBookingDto & { userId: number }) {
+        return this.bookingService.createBooking(data, data.userId);
+    }
+
+    @MessagePattern(MP.BOOKING_COMPLETE)
+    async handleCompleteBooking(@Payload() data: { bookingId: string; userId: number; paymentTransactionId: string }) {
+        return this.bookingService.completeBooking(data.bookingId, data.userId, data.paymentTransactionId);
+    }
+
+    @MessagePattern(MP.BOOKING_CANCEL)
+    async handleCancelBooking(@Payload() data: { bookingId: string; userId: number; reason?: string }) {
+        return this.bookingService.cancelBooking(data.bookingId, data.userId, data.reason);
+    }
+
+    @MessagePattern(MP.BOOKING_EXTEND)
+    async handleExtendBooking(@Payload() data: { bookingId: string; userId: number }) {
+        return this.bookingService.extendBooking(data.bookingId, data.userId);
+    }
+
+    @MessagePattern(MP.BOOKING_FIND_BY_USER)
+    async handleGetMyBookings(@Payload() data: { userId: number; status?: string }) {
+        return this.bookingService.getMyBookings(data.userId, data.status);
+    }
+
+    @MessagePattern(MP.BOOKING_FIND_BY_ID)
+    async handleGetBooking(@Payload() data: { bookingId: string; userId: number }) {
+        return this.bookingService.getBooking(data.bookingId, data.userId);
+    }
+
+    @MessagePattern(MP.BOOKING_CHECK_AVAILABILITY)
+    async handleCheckAvailability(@Payload() data: { flightId: number; seats: string }) {
+        return this.bookingService.checkSeatAvailability(data.flightId, data.seats);
     }
 }
