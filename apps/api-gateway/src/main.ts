@@ -6,8 +6,7 @@ import { AppModule } from './app.module';
 import helmet from 'helmet';
 import * as compression from 'compression';
 import * as cookieParser from 'cookie-parser';
-import { RateLimiterService } from './rate-limiter/rate-limiter.service';
-import { RateLimiterGuard } from './rate-limiter/rate-limiter.guard';
+import { RateLimiterService, RateLimiterGuard } from '@app/rate-limiter';
 
 async function bootstrap() {
   const logger = new Logger('APIGateway');
@@ -19,7 +18,6 @@ async function bootstrap() {
   const rateLimiterService = app.get(RateLimiterService);
 
   app.useGlobalGuards(new RateLimiterGuard(reflector, rateLimiterService));
-
 
   // Security
   app.use(helmet());
@@ -52,7 +50,7 @@ async function bootstrap() {
     .setTitle('Flight Booking API Gateway')
     .setDescription(
       'The API Gateway for the Flight Booking Microservices System. ' +
-      'This API provides endpoints for user authentication, flight search, and booking management.',
+        'This API provides endpoints for user authentication, flight search, and booking management.',
     )
     .setVersion('1.0')
     .addBearerAuth(

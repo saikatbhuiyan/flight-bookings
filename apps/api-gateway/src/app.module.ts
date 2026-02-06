@@ -27,7 +27,7 @@ import { WinstonModule } from 'nest-winston';
 import { TerminusModule } from '@nestjs/terminus';
 import { GatewayHealthController } from './controllers/health.controller';
 import authConfig from '@app/common/config/auth.config';
-import { RateLimiterModule } from './rate-limiter/rate-limiter.module';
+import { RateLimiterModule } from '@app/rate-limiter';
 
 @Module({
   imports: [
@@ -142,4 +142,4 @@ import { RateLimiterModule } from './rate-limiter/rate-limiter.module';
     },
   ],
 })
-export class AppModule { }
+export class AppModule {}

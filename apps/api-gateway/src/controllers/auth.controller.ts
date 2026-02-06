@@ -23,7 +23,12 @@ import {
   CookieService,
 } from '@app/common';
 import type { Request, Response } from 'express';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import {
   SignUpDto as RegisterDto,
@@ -31,7 +36,7 @@ import {
   RefreshTokenDto,
   SignOutDto,
 } from '@app/common';
-import { RateLimit } from '../rate-limiter/decorators/rate-limit.decorator';
+import { RateLimit } from '@app/rate-limiter';
 
 interface AuthTokens {
   accessToken: string;
@@ -45,7 +50,7 @@ export class AuthController {
   constructor(
     @Inject('AUTH_SERVICE') private readonly authClient: ClientProxy,
     private readonly cookieService: CookieService,
-  ) { }
+  ) {}
 
   // --- REGISTER ---------------------------------------------------
   @Public()
@@ -74,7 +79,10 @@ export class AuthController {
     description: 'Login successful',
     type: ApiResponseDto,
   })
-  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Invalid credentials' })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Invalid credentials',
+  })
   async login(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
@@ -108,7 +116,10 @@ export class AuthController {
     description: 'Token refreshed successfully',
     type: ApiResponseDto,
   })
-  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Missing or invalid refresh token' })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Missing or invalid refresh token',
+  })
   async refreshTokens(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
@@ -182,14 +193,17 @@ export class AuthController {
     try {
       return await firstValueFrom(this.authClient.send<T>(pattern, data));
     } catch (error) {
-      const rpcError = error as any;
+      const rpcError = error;
       console.error(`[Gateway] Error calling ${pattern}:`, rpcError);
 
       // Extract status: handle numeric and standard RMQ status formats
       let status = HttpStatus.INTERNAL_SERVER_ERROR;
       if (typeof rpcError.status === 'number') {
         status = rpcError.status;
-      } else if (rpcError.statusCode && typeof rpcError.statusCode === 'number') {
+      } else if (
+        rpcError.statusCode &&
+        typeof rpcError.statusCode === 'number'
+      ) {
         status = rpcError.statusCode;
       }
 
@@ -199,7 +213,10 @@ export class AuthController {
         message = rpcError.message;
       } else if (rpcError.message && typeof rpcError.message === 'object') {
         // Handle NestJS standard error response object: { message: "...", error: "...", statusCode: ... }
-        message = rpcError.message.message || rpcError.message.error || JSON.stringify(rpcError.message);
+        message =
+          rpcError.message.message ||
+          rpcError.message.error ||
+          JSON.stringify(rpcError.message);
       } else if (rpcError.error && typeof rpcError.error === 'string') {
         message = rpcError.error;
       }

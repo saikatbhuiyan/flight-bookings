@@ -25,14 +25,16 @@ export class RmqHelper {
         return result;
       })
       .catch((error) => {
-        console.log("error", error);
+        console.log('error', error);
         const isClientError =
           error instanceof HttpException &&
           error.getStatus() >= 400 &&
           error.getStatus() < 500;
 
         if (isClientError) {
-          logger.debug(`Ack-ing client error: ${error.message} (${error.getStatus()})`);
+          logger.debug(
+            `Ack-ing client error: ${error.message} (${error.getStatus()})`,
+          );
           channel.ack(originalMsg);
           throw error;
         }

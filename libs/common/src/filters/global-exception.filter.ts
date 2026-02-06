@@ -17,7 +17,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   constructor(
     private readonly configService: ConfigService,
     @Inject(WINSTON_MODULE_NEST_PROVIDER) private readonly logger: any,
-  ) { }
+  ) {}
 
   catch(exception: unknown, host: ArgumentsHost) {
     if (host.getType() !== 'http') {
@@ -28,7 +28,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request & { correlationId?: string }>();
 
-    const correlationId = (request['correlationId'] || request.headers['x-correlation-id'] || '') as string;
+    const correlationId = (request['correlationId'] ||
+      request.headers['x-correlation-id'] ||
+      '') as string;
     const path = request.url;
     const timestamp = new Date().toISOString();
     const isProduction = process.env.NODE_ENV === 'production';
@@ -98,7 +100,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       errorCode = 'ERR_UNEXPECTED';
     }
 
-    const apiVersion = this.configService.get<string>('appConfig.apiVersion', '1.0');
+    const apiVersion = this.configService.get<string>(
+      'appConfig.apiVersion',
+      '1.0',
+    );
 
     const apiResponse: ApiResponse<null> = {
       success: false,
@@ -111,7 +116,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       correlationId,
       path,
       // Hide stack trace in production
-      errors: isProduction ? errors : (errors || (exception instanceof Error ? [exception.stack!] : undefined)),
+      errors: isProduction
+        ? errors
+        : errors ||
+          (exception instanceof Error ? [exception.stack] : undefined),
     };
 
     // Enhanced logging
@@ -127,11 +135,20 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     };
 
     if (status >= 500) {
-      this.logger.error(`[${correlationId}] ${request.method} ${request.url} - ${status} - ${message}`, logData);
+      this.logger.error(
+        `[${correlationId}] ${request.method} ${request.url} - ${status} - ${message}`,
+        logData,
+      );
     } else if (status >= 400) {
-      this.logger.warn(`[${correlationId}] ${request.method} ${request.url} - ${status} - ${message}`, logData);
+      this.logger.warn(
+        `[${correlationId}] ${request.method} ${request.url} - ${status} - ${message}`,
+        logData,
+      );
     } else {
-      this.logger.log(`[${correlationId}] ${request.method} ${request.url} - ${status} - ${message}`, logData);
+      this.logger.log(
+        `[${correlationId}] ${request.method} ${request.url} - ${status} - ${message}`,
+        logData,
+      );
     }
 
     response.status(status).json(apiResponse);

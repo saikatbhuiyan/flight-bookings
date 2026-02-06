@@ -76,8 +76,8 @@ export class LoggingInterceptor implements NestInterceptor {
           : 0;
         const responseSize = responseBody
           ? JSON.stringify(
-            this.isDev ? this.sanitize(responseBody) : responseBody,
-          ).length
+              this.isDev ? this.sanitize(responseBody) : responseBody,
+            ).length
           : 0;
 
         const message = `[${correlationId}] ${method} ${url} - ${statusCode} (${duration}ms)`;

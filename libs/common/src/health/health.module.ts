@@ -7,9 +7,9 @@ import { RedisHealthIndicator } from './indicators/redis.health';
 import { RedisModule } from '../redis/redis.module';
 
 @Module({
-    imports: [TerminusModule, ConfigModule, RedisModule],
-    controllers: [HealthController],
-    providers: [RabbitMQHealthIndicator, RedisHealthIndicator],
-    exports: [RabbitMQHealthIndicator, RedisHealthIndicator, TerminusModule],
+  imports: [TerminusModule, ConfigModule, RedisModule],
+  controllers: [HealthController],
+  providers: [RabbitMQHealthIndicator, RedisHealthIndicator],
+  exports: [RabbitMQHealthIndicator, RedisHealthIndicator, TerminusModule],
 })
-export class HealthModule { }
+export class HealthModule {}

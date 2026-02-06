@@ -8,13 +8,9 @@ import { AirplaneModule } from '../airplane/airplane.module';
 import { AirportModule } from '../airport/airport.module';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([Flight]),
-        AirplaneModule,
-        AirportModule,
-    ],
-    controllers: [FlightController],
-    providers: [FlightService, FlightRepository],
-    exports: [FlightService, FlightRepository],
+  imports: [TypeOrmModule.forFeature([Flight]), AirplaneModule, AirportModule],
+  controllers: [FlightController],
+  providers: [FlightService, FlightRepository],
+  exports: [FlightService, FlightRepository],
 })
-export class FlightModule { }
+export class FlightModule {}

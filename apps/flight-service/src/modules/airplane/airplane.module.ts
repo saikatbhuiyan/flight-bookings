@@ -6,9 +6,9 @@ import { AirplaneService } from './services/airplane.service';
 import { AirplaneRepository } from './repositories/airplane.repository';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([Airplane])],
-    controllers: [AirplaneController],
-    providers: [AirplaneService, AirplaneRepository],
-    exports: [AirplaneService, AirplaneRepository],
+  imports: [TypeOrmModule.forFeature([Airplane])],
+  controllers: [AirplaneController],
+  providers: [AirplaneService, AirplaneRepository],
+  exports: [AirplaneService, AirplaneRepository],
 })
-export class AirplaneModule { }
+export class AirplaneModule {}

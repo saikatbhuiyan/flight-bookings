@@ -7,27 +7,27 @@ import { PaginationMeta } from '../dto/pagination-response.dto';
  * Generates proper OpenAPI schema for paginated endpoints
  */
 export const ApiPaginatedResponse = <TModel extends Type<any>>(
-    model: TModel,
+  model: TModel,
 ) => {
-    return applyDecorators(
-        ApiOkResponse({
-            description: 'Paginated response',
-            schema: {
-                allOf: [
-                    {
-                        properties: {
-                            data: {
-                                type: 'array',
-                                items: { $ref: getSchemaPath(model) },
-                            },
-                            meta: {
-                                type: 'object',
-                                $ref: getSchemaPath(PaginationMeta),
-                            },
-                        },
-                    },
-                ],
+  return applyDecorators(
+    ApiOkResponse({
+      description: 'Paginated response',
+      schema: {
+        allOf: [
+          {
+            properties: {
+              data: {
+                type: 'array',
+                items: { $ref: getSchemaPath(model) },
+              },
+              meta: {
+                type: 'object',
+                $ref: getSchemaPath(PaginationMeta),
+              },
             },
-        }),
-    );
+          },
+        ],
+      },
+    }),
+  );
 };

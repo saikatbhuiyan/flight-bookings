@@ -41,6 +41,18 @@
       ],
       "@app/storage/*": [
         "libs/storage/src/*"
+      ],
+      "@app/seat-lock": [
+        "libs/seat-lock/src"
+      ],
+      "@app/seat-lock/*": [
+        "libs/seat-lock/src/*"
+      ],
+      "@app/rate-limiter": [
+        "libs/rate-limiter/src"
+      ],
+      "@app/rate-limiter/*": [
+        "libs/rate-limiter/src/*"
       ]
     }
   }

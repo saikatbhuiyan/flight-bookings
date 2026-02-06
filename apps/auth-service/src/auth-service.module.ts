@@ -8,12 +8,10 @@ import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { RefreshTokenIdsStorage } from './authentication/refresh-token-ids.storage';
 import { AuthAuditService } from './authentication/auth-audit.service';
 import { RefreshTokenBlacklist } from './authentication/refresh-token-black-list.storage';
-import {
-  AuthAudit,
-  DatabaseModule,
-  NotificationSettings,
-  User,
-} from '@app/database';
+import { DatabaseModule } from '@app/database';
+import { User } from './entities/user.entity';
+import { AuthAudit } from './entities/auth-audit.entity';
+import { NotificationSettings } from './entities/notification-settings.entity';
 import {
   AccessTokenGuard,
   AuthenticationGuard,
@@ -85,4 +83,4 @@ import authConfig from '@app/common/config/auth.config';
   ],
   controllers: [AuthMessageController],
 })
-export class AuthServiceModule { }
+export class AuthServiceModule {}

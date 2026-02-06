@@ -37,4 +37,4 @@ import { LoggingInterceptor } from '@app/common';
     NotificationService,
   ],
 })
-export class NotificationServiceModule { }
+export class NotificationServiceModule {}

@@ -40,7 +40,9 @@ async function bootstrap() {
   app.useGlobalFilters(new CommonRpcExceptionFilter());
 
   await app.startAllMicroservices();
-  logger.log(`Notification Service is running and listening to queue: ${queue}`);
+  logger.log(
+    `Notification Service is running and listening to queue: ${queue}`,
+  );
 
   const port = configService.get<number>('PORT') || 3004;
   await app.listen(port);

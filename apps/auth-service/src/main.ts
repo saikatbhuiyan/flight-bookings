@@ -4,7 +4,7 @@ import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AuthServiceModule } from './auth-service.module';
-import { RmqSetup, CommonRpcExceptionFilter } from '@app/common';
+import { RmqSetup } from '@app/common';
 
 async function bootstrap() {
   const logger = new Logger('AuthService');
@@ -44,7 +44,6 @@ async function bootstrap() {
       transform: true,
     }),
   );
-
 
   // Swagger Documentation
   const swaggerConfig = new DocumentBuilder()

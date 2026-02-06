@@ -168,6 +168,9 @@ export enum MessagePattern {
   BOOKING_FIND_BY_USER = 'booking.findByUser',
   BOOKING_UPDATE = 'booking.update',
   BOOKING_CANCEL = 'booking.cancel',
+  BOOKING_COMPLETE = 'booking.complete',
+  BOOKING_EXTEND = 'booking.extend',
+  BOOKING_CHECK_AVAILABILITY = 'booking.checkAvailability',
 
   // Notification patterns
   NOTIFICATION_SEND_EMAIL = 'notification.sendEmail',
