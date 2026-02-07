@@ -53,6 +53,12 @@
       ],
       "@app/rate-limiter/*": [
         "libs/rate-limiter/src/*"
+      ],
+      "@app/telemetry": [
+        "libs/telemetry/src"
+      ],
+      "@app/telemetry/*": [
+        "libs/telemetry/src/*"
       ]
     }
   }

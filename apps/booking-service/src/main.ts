@@ -5,11 +5,15 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { BookingServiceModule } from './booking-service.module';
 import { CommonRpcExceptionFilter } from '@app/common';
+import { initializeTracing } from '@app/telemetry';
+
 
 async function bootstrap() {
   const logger = new Logger('BookingService');
   const app = await NestFactory.create(BookingServiceModule);
   const configService = app.get(ConfigService);
+
+  initializeTracing('booking-service');
 
   // Global prefix for HTTP routes
   app.setGlobalPrefix('api/v1');
