@@ -5,6 +5,7 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { FlightServiceModule } from './flight-service.module';
 import { CommonRpcExceptionFilter, RmqSetup } from '@app/common';
+import { initializeTracing } from '@app/telemetry';
 
 async function bootstrap() {
   const logger = new Logger('FlightService');
@@ -13,8 +14,10 @@ async function bootstrap() {
   const rabbitmqUrl = configService.get<string>('RABBITMQ_URL');
   const queue = 'flight_queue';
 
+  initializeTracing('flight-service');
+
   // Automatically create queues for this service
-  await RmqSetup.setupQueues(configService, 'auth', 10000, 1);
+  await RmqSetup.setupQueues(configService, 'flight', 10000, 1);
 
   // Global prefix for HTTP routes
   app.setGlobalPrefix('api/v1');
