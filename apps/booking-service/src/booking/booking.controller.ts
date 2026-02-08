@@ -12,14 +12,14 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { MessagePattern as MP } from '@app/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { BookingService } from './booking.service';
-import { CreateBookingDto } from '../booking-saga/booking-saga.orchestrator';
+import { CreateBookingDto } from '../booking-saga/saga-orchestrator.service';
 import { RateLimit } from '@app/rate-limiter';
 
 @ApiTags('Bookings')
 @Controller('bookings')
 @ApiBearerAuth()
 export class BookingController {
-  constructor(private readonly bookingService: BookingService) {}
+  constructor(private readonly bookingService: BookingService) { }
 
   @Post()
   @RateLimit({ points: 3, duration: 60, blockDuration: 300 })

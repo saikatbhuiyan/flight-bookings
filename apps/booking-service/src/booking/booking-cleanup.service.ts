@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { BookingSagaOrchestrator } from '../booking-saga/booking-saga.orchestrator';
+import { BookingSagaOrchestrator } from '../booking-saga/saga-orchestrator.service';
 import { BookingRepository } from '../repositories/booking.repository';
 import { SeatLockService } from '@app/seat-lock';
 
@@ -12,7 +12,7 @@ export class BookingCleanupService {
     private readonly bookingRepository: BookingRepository,
     private readonly seatLockService: SeatLockService,
     private readonly sagaOrchestrator: BookingSagaOrchestrator,
-  ) {}
+  ) { }
 
   /**
    * Clean up expired bookings every minute

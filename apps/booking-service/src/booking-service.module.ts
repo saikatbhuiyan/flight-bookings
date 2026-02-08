@@ -14,7 +14,7 @@ import { Booking } from './entities/booking.entity';
 import { LoggingInterceptor } from '@app/common';
 import { BookingController } from './booking/booking.controller';
 import { BookingService } from './booking/booking.service';
-import { BookingSagaOrchestrator } from './booking-saga/booking-saga.orchestrator';
+import { BookingSagaOrchestrator } from './booking-saga/saga-orchestrator.service';
 import { BookingRepository } from './repositories/booking.repository';
 import { SeatLockService } from '@app/seat-lock';
 import { EventEmitterModule, EventEmitter2 } from '@nestjs/event-emitter';
@@ -49,4 +49,4 @@ import { EventEmitterModule, EventEmitter2 } from '@nestjs/event-emitter';
     EventEmitter2,
   ],
 })
-export class BookingServiceModule {}
+export class BookingServiceModule { }

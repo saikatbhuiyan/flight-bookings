@@ -1,0 +1,293 @@
+import {
+    MigrationInterface,
+    QueryRunner,
+    Table,
+    TableIndex,
+} from 'typeorm';
+
+export class AddSagaAndOutbox1770486663295 implements MigrationInterface {
+    name = 'AddSagaAndOutbox1770486663295';
+
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        // Create saga_states_status_enum
+        await queryRunner.query(`
+      CREATE TYPE "public"."saga_states_status_enum" AS ENUM(
+        'INITIATED', 
+        'SEATS_LOCKED', 
+        'FLIGHT_RESERVED', 
+        'PAYMENT_PROCESSING', 
+        'PAYMENT_COMPLETED', 
+        'BOOKING_CONFIRMED', 
+        'FAILED', 
+        'COMPENSATING', 
+        'COMPENSATED'
+      )
+    `);
+
+        // Create saga_states table
+        await queryRunner.createTable(
+            new Table({
+                name: 'saga_states',
+                columns: [
+                    {
+                        name: 'id',
+                        type: 'serial',
+                        isPrimary: true,
+                    },
+                    {
+                        name: 'saga_id',
+                        type: 'varchar',
+                        length: '36',
+                        isUnique: true,
+                        isNullable: false,
+                    },
+                    {
+                        name: 'saga_type',
+                        type: 'varchar',
+                        length: '50',
+                        isNullable: false,
+                    },
+                    {
+                        name: 'booking_id',
+                        type: 'varchar',
+                        length: '36',
+                        isNullable: false,
+                    },
+                    {
+                        name: 'status',
+                        type: 'enum',
+                        enum: [
+                            'INITIATED',
+                            'SEATS_LOCKED',
+                            'FLIGHT_RESERVED',
+                            'PAYMENT_PROCESSING',
+                            'PAYMENT_COMPLETED',
+                            'BOOKING_CONFIRMED',
+                            'FAILED',
+                            'COMPENSATING',
+                            'COMPENSATED',
+                        ],
+                        enumName: 'saga_states_status_enum',
+                        default: "'INITIATED'",
+                        isNullable: false,
+                    },
+                    {
+                        name: 'current_step',
+                        type: 'integer',
+                        default: '0',
+                        isNullable: false,
+                    },
+                    {
+                        name: 'total_steps',
+                        type: 'integer',
+                        default: '6',
+                        isNullable: false,
+                    },
+                    {
+                        name: 'payload',
+                        type: 'jsonb',
+                        isNullable: false,
+                    },
+                    {
+                        name: 'context',
+                        type: 'jsonb',
+                        isNullable: true,
+                    },
+                    {
+                        name: 'error_message',
+                        type: 'text',
+                        isNullable: true,
+                    },
+                    {
+                        name: 'retry_count',
+                        type: 'integer',
+                        default: '0',
+                        isNullable: false,
+                    },
+                    {
+                        name: 'max_retries',
+                        type: 'integer',
+                        default: '3',
+                        isNullable: false,
+                    },
+                    {
+                        name: 'last_error_at',
+                        type: 'timestamp',
+                        isNullable: true,
+                    },
+                    {
+                        name: 'completed_at',
+                        type: 'timestamp',
+                        isNullable: true,
+                    },
+                    {
+                        name: 'compensated_at',
+                        type: 'timestamp',
+                        isNullable: true,
+                    },
+                    {
+                        name: 'idempotency_key',
+                        type: 'varchar',
+                        length: '100',
+                        isNullable: true,
+                    },
+                    {
+                        name: 'created_at',
+                        type: 'timestamp',
+                        default: 'now()',
+                        isNullable: false,
+                    },
+                    {
+                        name: 'updated_at',
+                        type: 'timestamp',
+                        default: 'now()',
+                        isNullable: false,
+                    },
+                ],
+            }),
+            true,
+        );
+
+        // Create saga_states indexes
+        await queryRunner.createIndices('saga_states', [
+            new TableIndex({
+                name: 'IDX_3ba29ee0383d442fa0e4f6dbba',
+                columnNames: ['created_at'],
+            }),
+            new TableIndex({
+                name: 'IDX_c707d2bbf2290a58023d4f9b16',
+                columnNames: ['status'],
+            }),
+            new TableIndex({
+                name: 'IDX_b55caaedced424e15f452ea7bd',
+                columnNames: ['booking_id'],
+            }),
+        ]);
+
+        // Create outbox_events_status_enum
+        await queryRunner.query(`
+      CREATE TYPE "public"."outbox_events_status_enum" AS ENUM(
+        'PENDING', 
+        'PROCESSING', 
+        'PUBLISHED', 
+        'FAILED'
+      )
+    `);
+
+        // Create outbox_events table
+        await queryRunner.createTable(
+            new Table({
+                name: 'outbox_events',
+                columns: [
+                    {
+                        name: 'id',
+                        type: 'serial',
+                        isPrimary: true,
+                    },
+                    {
+                        name: 'event_id',
+                        type: 'varchar',
+                        length: '36',
+                        isUnique: true,
+                        isNullable: false,
+                    },
+                    {
+                        name: 'aggregate_type',
+                        type: 'varchar',
+                        length: '50',
+                        isNullable: false,
+                    },
+                    {
+                        name: 'aggregate_id',
+                        type: 'varchar',
+                        length: '36',
+                        isNullable: false,
+                    },
+                    {
+                        name: 'event_type',
+                        type: 'varchar',
+                        length: '100',
+                        isNullable: false,
+                    },
+                    {
+                        name: 'payload',
+                        type: 'jsonb',
+                        isNullable: false,
+                    },
+                    {
+                        name: 'status',
+                        type: 'enum',
+                        enum: ['PENDING', 'PROCESSING', 'PUBLISHED', 'FAILED'],
+                        enumName: 'outbox_events_status_enum',
+                        default: "'PENDING'",
+                        isNullable: false,
+                    },
+                    {
+                        name: 'retry_count',
+                        type: 'integer',
+                        default: '0',
+                        isNullable: false,
+                    },
+                    {
+                        name: 'max_retries',
+                        type: 'integer',
+                        default: '3',
+                        isNullable: false,
+                    },
+                    {
+                        name: 'last_error',
+                        type: 'text',
+                        isNullable: true,
+                    },
+                    {
+                        name: 'published_at',
+                        type: 'timestamp',
+                        isNullable: true,
+                    },
+                    {
+                        name: 'trace_id',
+                        type: 'varchar',
+                        length: '32',
+                        isNullable: true,
+                    },
+                    {
+                        name: 'span_id',
+                        type: 'varchar',
+                        length: '16',
+                        isNullable: true,
+                    },
+                    {
+                        name: 'created_at',
+                        type: 'timestamp',
+                        default: 'now()',
+                        isNullable: false,
+                    },
+                ],
+            }),
+            true,
+        );
+
+        // Create outbox_events indexes
+        await queryRunner.createIndices('outbox_events', [
+            new TableIndex({
+                name: 'IDX_287c7ad6ab8e2fc1f2e25b59e4',
+                columnNames: ['event_type'],
+            }),
+            new TableIndex({
+                name: 'IDX_85ca65d119cee338ec8d714bfa',
+                columnNames: ['aggregate_id'],
+            }),
+            new TableIndex({
+                name: 'IDX_cc0d2a98103923a41a9aebc384',
+                columnNames: ['status', 'created_at'],
+            }),
+        ]);
+    }
+
+    public async down(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.dropTable('outbox_events');
+        await queryRunner.query('DROP TYPE "public"."outbox_events_status_enum"');
+        await queryRunner.dropTable('saga_states');
+        await queryRunner.query('DROP TYPE "public"."saga_states_status_enum"');
+    }
+}
