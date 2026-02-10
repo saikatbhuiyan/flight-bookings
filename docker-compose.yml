@@ -78,8 +78,8 @@ services:
     image: jaegertracing/all-in-one:latest
     ports:
       - "16686:16686"   # Jaeger UI
-      - "4317:4317"     # OTLP gRPC receiver
-      - "4318:4318"     # OTLP HTTP receiver
+      # - "4317:4317"     # OTLP gRPC receiver (Conflicting with Tempo)
+      # - "4318:4318"     # OTLP HTTP receiver (Conflicting with Tempo)
       - "14268:14268"   # Jaeger collector (legacy)
       - "14250:14250"   # Jaeger gRPC
     environment:
@@ -90,7 +90,7 @@ services:
 
   # Alternative: Grafana Tempo (newer, better for scale)
   tempo:
-    image: grafana/tempo:latest
+    image: grafana/tempo:2.4.0
     command: ["-config.file=/etc/tempo.yaml"]
     volumes:
       - ./tempo.yaml:/etc/tempo.yaml
