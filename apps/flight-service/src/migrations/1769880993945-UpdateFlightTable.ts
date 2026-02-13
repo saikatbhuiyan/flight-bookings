@@ -6,13 +6,13 @@ export class UpdateFlightTable1769880993945 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`DROP INDEX IF EXISTS cities_name_idx`);
     await queryRunner.query(
-      `CREATE UNIQUE INDEX cities_name_country_unique ON cities(name, country)`,
+      `CREATE UNIQUE INDEX IF NOT EXISTS cities_name_country_unique ON cities(name, country)`,
     );
     await queryRunner.query(
-      `CREATE UNIQUE INDEX seats_airplane_row_col_unique ON seats(airplane_id, row, col)`,
+      `CREATE UNIQUE INDEX IF NOT EXISTS seats_airplane_row_col_unique ON seats(airplane_id, row, col)`,
     );
     await queryRunner.query(
-      `CREATE UNIQUE INDEX flights_number_departure_unique ON flights(flight_number, departure_time)`,
+      `CREATE UNIQUE INDEX IF NOT EXISTS flights_number_departure_unique ON flights(flight_number, departure_time)`,
     );
   }
 

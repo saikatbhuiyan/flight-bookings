@@ -8,20 +8,23 @@ import {
 
 export class CreateFlightsTable1769449052055 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // Create enum type
+    // Create enum type idempotently
     await queryRunner.query(`
-      CREATE TYPE flight_status AS ENUM (
-        'SCHEDULED', 
-        'DELAYED', 
-        'BOARDING', 
-        'DEPARTED', 
-        'IN_FLIGHT', 
-        'ARRIVED', 
-        'CANCELLED'
-      );
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'flight_status') THEN
+          CREATE TYPE flight_status AS ENUM (
+            'SCHEDULED', 
+            'DELAYED', 
+            'BOARDING', 
+            'DEPARTED', 
+            'IN_FLIGHT', 
+            'ARRIVED', 
+            'CANCELLED'
+          );
+        END IF;
+      END $$;
     `);
-
-    await queryRunner.dropTable('flights', true);
 
     await queryRunner.createTable(
       new Table({
@@ -147,93 +150,54 @@ export class CreateFlightsTable1769449052055 implements MigrationInterface {
           },
         ],
       }),
-      true,
+      true, // ifNotExists: true
     );
 
-    // Add check constraints
+    // Add check constraints idempotently
     await queryRunner.query(`
-      ALTER TABLE flights 
-      ADD CONSTRAINT chk_flights_times 
-      CHECK (departure_time < arrival_time);
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_flights_times') THEN
+          ALTER TABLE flights 
+          ADD CONSTRAINT chk_flights_times 
+          CHECK (departure_time < arrival_time);
+        END IF;
+
+        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_flights_airports') THEN
+          ALTER TABLE flights 
+          ADD CONSTRAINT chk_flights_airports 
+          CHECK (departure_airport_id != arrival_airport_id);
+        END IF;
+      END $$;
     `);
 
+    // Create indexes idempotently
     await queryRunner.query(`
-      ALTER TABLE flights 
-      ADD CONSTRAINT chk_flights_airports 
-      CHECK (departure_airport_id != arrival_airport_id);
+      CREATE INDEX IF NOT EXISTS "idx_flights_flight_number" ON "flights" ("flight_number");
+      CREATE UNIQUE INDEX IF NOT EXISTS "flights_number_departure_unique" ON "flights" ("flight_number", "departure_time");
+      CREATE INDEX IF NOT EXISTS "idx_flights_departure" ON "flights" ("departure_airport_id", "departure_time");
+      CREATE INDEX IF NOT EXISTS "idx_flights_arrival" ON "flights" ("arrival_airport_id", "arrival_time");
+      CREATE INDEX IF NOT EXISTS "idx_flights_status" ON "flights" ("status");
+      CREATE INDEX IF NOT EXISTS "idx_flights_departure_time" ON "flights" ("departure_time");
     `);
 
-    // Create indexes
-    await queryRunner.createIndex(
-      'flights',
-      new TableIndex({
-        name: 'idx_flights_flight_number',
-        columnNames: ['flight_number'],
-      }),
-    );
+    // Create foreign keys idempotently
+    await queryRunner.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'FK_airplane_flights') THEN
+          ALTER TABLE flights ADD CONSTRAINT "FK_airplane_flights" FOREIGN KEY ("airplane_id") REFERENCES "airplanes"("id") ON DELETE RESTRICT;
+        END IF;
 
-    await queryRunner.createIndex(
-      'flights',
-      new TableIndex({
-        name: 'idx_flights_departure',
-        columnNames: ['departure_airport_id', 'departure_time'],
-      }),
-    );
+        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'FK_departure_airport_flights') THEN
+          ALTER TABLE flights ADD CONSTRAINT "FK_departure_airport_flights" FOREIGN KEY ("departure_airport_id") REFERENCES "airports"("id") ON DELETE RESTRICT;
+        END IF;
 
-    await queryRunner.createIndex(
-      'flights',
-      new TableIndex({
-        name: 'idx_flights_arrival',
-        columnNames: ['arrival_airport_id', 'arrival_time'],
-      }),
-    );
-
-    await queryRunner.createIndex(
-      'flights',
-      new TableIndex({
-        name: 'idx_flights_status',
-        columnNames: ['status'],
-      }),
-    );
-
-    await queryRunner.createIndex(
-      'flights',
-      new TableIndex({
-        name: 'idx_flights_departure_time',
-        columnNames: ['departure_time'],
-      }),
-    );
-
-    // Create foreign keys
-    await queryRunner.createForeignKey(
-      'flights',
-      new TableForeignKey({
-        columnNames: ['airplane_id'],
-        referencedColumnNames: ['id'],
-        referencedTableName: 'airplanes',
-        onDelete: 'RESTRICT',
-      }),
-    );
-
-    await queryRunner.createForeignKey(
-      'flights',
-      new TableForeignKey({
-        columnNames: ['departure_airport_id'],
-        referencedColumnNames: ['id'],
-        referencedTableName: 'airports',
-        onDelete: 'RESTRICT',
-      }),
-    );
-
-    await queryRunner.createForeignKey(
-      'flights',
-      new TableForeignKey({
-        columnNames: ['arrival_airport_id'],
-        referencedColumnNames: ['id'],
-        referencedTableName: 'airports',
-        onDelete: 'RESTRICT',
-      }),
-    );
+        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'FK_arrival_airport_flights') THEN
+          ALTER TABLE flights ADD CONSTRAINT "FK_arrival_airport_flights" FOREIGN KEY ("arrival_airport_id") REFERENCES "airports"("id") ON DELETE RESTRICT;
+        END IF;
+      END $$;
+    `);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

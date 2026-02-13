@@ -29,6 +29,11 @@ async function bootstrap() {
       queue,
       queueOptions: {
         durable: true,
+        arguments: {
+          'x-dead-letter-exchange': '',
+          'x-dead-letter-routing-key': `${queue}_retry`,
+          'x-max-length': 10000,
+        },
       },
       prefetchCount: 1,
       noAck: false,

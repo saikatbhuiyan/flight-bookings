@@ -86,6 +86,11 @@ import { RateLimiterModule } from '@app/rate-limiter';
             queue: 'flight_queue',
             queueOptions: {
               durable: true,
+              arguments: {
+                'x-dead-letter-exchange': '',
+                'x-dead-letter-routing-key': 'flight_queue_retry',
+                'x-max-length': 10000,
+              },
             },
           },
         }),
@@ -101,6 +106,11 @@ import { RateLimiterModule } from '@app/rate-limiter';
             queue: 'booking_queue',
             queueOptions: {
               durable: true,
+              arguments: {
+                'x-dead-letter-exchange': '',
+                'x-dead-letter-routing-key': 'booking_queue_retry',
+                'x-max-length': 10000,
+              },
             },
           },
         }),
@@ -142,4 +152,4 @@ import { RateLimiterModule } from '@app/rate-limiter';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }
