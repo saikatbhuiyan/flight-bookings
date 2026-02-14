@@ -7,7 +7,7 @@ import { SeatLockService } from '@app/seat-lock';
 import {
   BookingSagaOrchestrator,
   CreateBookingDto,
-} from '../booking-saga/booking-saga.orchestrator';
+} from '../booking-saga/saga-orchestrator.service';
 import { BookingRepository } from '../repositories/booking.repository';
 
 @Injectable()
@@ -16,7 +16,7 @@ export class BookingService {
     private readonly sagaOrchestrator: BookingSagaOrchestrator,
     private readonly bookingRepository: BookingRepository,
     private readonly seatLockService: SeatLockService,
-  ) {}
+  ) { }
 
   async createBooking(dto: CreateBookingDto, userId: number) {
     try {

@@ -2,7 +2,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class SeedInitialData1769475507497 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // Insert Cities
+    // Insert Cities idempotently
     await queryRunner.query(`
       INSERT INTO cities (name, country, timezone) VALUES
       ('New York', 'USA', 'America/New_York'),
@@ -13,10 +13,11 @@ export class SeedInitialData1769475507497 implements MigrationInterface {
       ('Tokyo', 'Japan', 'Asia/Tokyo'),
       ('Mumbai', 'India', 'Asia/Kolkata'),
       ('Delhi', 'India', 'Asia/Kolkata'),
-      ('Dhaka', 'Bangladesh', 'Asia/Dhaka');
+      ('Dhaka', 'Bangladesh', 'Asia/Dhaka')
+      ON CONFLICT (name, country) DO NOTHING;
     `);
 
-    // Insert Airports
+    // Insert Airports idempotently
     await queryRunner.query(`
       INSERT INTO airports (name, code, icao_code, address, latitude, longitude, city_id) VALUES
       ('John F. Kennedy International Airport', 'JFK', 'KJFK', 'Queens, NY 11430', 40.6413, -73.7781, (SELECT id FROM cities WHERE name = 'New York')),
@@ -27,10 +28,11 @@ export class SeedInitialData1769475507497 implements MigrationInterface {
       ('Tokyo Haneda Airport', 'HND', 'RJTT', 'Tokyo 144-0041', 35.5494, 139.7798, (SELECT id FROM cities WHERE name = 'Tokyo')),
       ('Chhatrapati Shivaji International Airport', 'BOM', 'VABB', 'Mumbai 400099', 19.0896, 72.8656, (SELECT id FROM cities WHERE name = 'Mumbai')),
       ('Indira Gandhi International Airport', 'DEL', 'VIDP', 'New Delhi 110037', 28.5562, 77.1000, (SELECT id FROM cities WHERE name = 'Delhi')),
-      ('Hazrat Shahjalal International Airport', 'DAC', 'VGHS', 'Dhaka 1229', 23.8433, 90.3978, (SELECT id FROM cities WHERE name = 'Dhaka'));
+      ('Hazrat Shahjalal International Airport', 'DAC', 'VGHS', 'Dhaka 1229', 23.8433, 90.3978, (SELECT id FROM cities WHERE name = 'Dhaka'))
+      ON CONFLICT (code) DO NOTHING;
     `);
 
-    // Insert Airplanes
+    // Insert Airplanes idempotently
     await queryRunner.query(`
       INSERT INTO airplanes (
         model_number, manufacturer, total_capacity, 
@@ -41,10 +43,11 @@ export class SeedInitialData1769475507497 implements MigrationInterface {
       ('A320', 'Airbus', 180, 150, 24, 6, 0, 2021, 'A67890', true),
       ('777-300ER', 'Boeing', 396, 264, 96, 8, 28, 2019, 'N98765', true),
       ('A380', 'Airbus', 544, 399, 96, 14, 35, 2018, 'A11111', true),
-      ('787-9', 'Boeing', 296, 234, 48, 6, 8, 2022, 'N22222', true);
+      ('787-9', 'Boeing', 296, 234, 48, 6, 8, 2022, 'N22222', true)
+      ON CONFLICT (registration_number) DO NOTHING;
     `);
 
-    // Insert Seats for first airplane (737-800 - N12345)
+    // Insert Seats for first airplane (737-800 - N12345) idempotently
     await queryRunner.query(`
       INSERT INTO seats (airplane_id, row, col, type)
       SELECT (SELECT id FROM airplanes WHERE registration_number = 'N12345'), r, c, 'FIRST_CLASS'::seat_type
@@ -54,10 +57,11 @@ export class SeedInitialData1769475507497 implements MigrationInterface {
       FROM generate_series(5, 7) AS r, unnest(ARRAY['A', 'B', 'C', 'D', 'E', 'F']) AS c
       UNION ALL
       SELECT (SELECT id FROM airplanes WHERE registration_number = 'N12345'), r, c, 'ECONOMY'::seat_type
-      FROM generate_series(8, 35) AS r, unnest(ARRAY['A', 'B', 'C', 'D', 'E', 'F']) AS c;
+      FROM generate_series(8, 35) AS r, unnest(ARRAY['A', 'B', 'C', 'D', 'E', 'F']) AS c
+      ON CONFLICT DO NOTHING;
     `);
 
-    // Insert Flights
+    // Insert Flights idempotently
     await queryRunner.query(`
       INSERT INTO flights (
         flight_number, airplane_id, 
@@ -67,7 +71,7 @@ export class SeedInitialData1769475507497 implements MigrationInterface {
         economy_price, business_price, first_class_price, premium_economy_price,
         economy_seats_available, business_seats_available, 
         first_class_seats_available, premium_economy_seats_available,
-        status
+        status, version
       ) VALUES
       -- JFK to LHR
       (
@@ -79,7 +83,7 @@ export class SeedInitialData1769475507497 implements MigrationInterface {
         'B22', '7',
         850.00, 3500.00, 8500.00, 1200.00,
         162, 20, 4, 3,
-        'SCHEDULED'
+        'SCHEDULED', 0
       ),
       -- LAX to SIN
       (
@@ -91,7 +95,7 @@ export class SeedInitialData1769475507497 implements MigrationInterface {
         'A15', '2',
         1200.00, 5500.00, 12000.00, 1800.00,
         264, 96, 8, 28,
-        'SCHEDULED'
+        'SCHEDULED', 0
       ),
       -- DXB to JFK
       (
@@ -103,7 +107,7 @@ export class SeedInitialData1769475507497 implements MigrationInterface {
         'C7', '3',
         1450.00, 6200.00, 15000.00, 2100.00,
         399, 96, 14, 35,
-        'SCHEDULED'
+        'SCHEDULED', 0
       ),
       -- DAC to DXB
       (
@@ -115,7 +119,7 @@ export class SeedInitialData1769475507497 implements MigrationInterface {
         'D12', '2',
         450.00, 1800.00, 4500.00, 650.00,
         150, 24, 6, 0,
-        'SCHEDULED'
+        'SCHEDULED', 0
       ),
       -- BOM to LHR
       (
@@ -127,8 +131,9 @@ export class SeedInitialData1769475507497 implements MigrationInterface {
         'E8', '5',
         780.00, 3200.00, 7800.00, 1100.00,
         234, 48, 6, 8,
-        'SCHEDULED'
-      );
+        'SCHEDULED', 0
+      )
+      ON CONFLICT (flight_number, departure_time) DO NOTHING;
     `);
   }
 

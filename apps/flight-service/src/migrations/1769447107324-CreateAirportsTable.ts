@@ -98,48 +98,33 @@ export class CreateAirportsTable1769447107324 implements MigrationInterface {
       true,
     );
 
-    await queryRunner.createIndex(
-      'airports',
-      new TableIndex({
-        name: 'idx_airports_code',
-        columnNames: ['code'],
-        isUnique: true,
-      }),
-    );
+    await queryRunner.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS "idx_airports_code" ON "airports" ("code");
+    `);
 
-    await queryRunner.createIndex(
-      'airports',
-      new TableIndex({
-        name: 'idx_airports_name',
-        columnNames: ['name'],
-      }),
-    );
+    await queryRunner.query(`
+      CREATE INDEX IF NOT EXISTS "idx_airports_name" ON "airports" ("name");
+    `);
 
-    await queryRunner.createIndex(
-      'airports',
-      new TableIndex({
-        name: 'idx_airports_city_id',
-        columnNames: ['city_id'],
-      }),
-    );
+    await queryRunner.query(`
+      CREATE INDEX IF NOT EXISTS "idx_airports_city_id" ON "airports" ("city_id");
+    `);
 
-    await queryRunner.createIndex(
-      'airports',
-      new TableIndex({
-        name: 'idx_airports_active',
-        columnNames: ['active'],
-      }),
-    );
+    await queryRunner.query(`
+      CREATE INDEX IF NOT EXISTS "idx_airports_active" ON "airports" ("active");
+    `);
 
-    await queryRunner.createForeignKey(
-      'airports',
-      new TableForeignKey({
-        columnNames: ['city_id'],
-        referencedTableName: 'cities',
-        referencedColumnNames: ['id'],
-        onDelete: 'RESTRICT',
-      }),
-    );
+    await queryRunner.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'FK_35db242a805855ae374834fd9f8') THEN
+          ALTER TABLE "airports" 
+          ADD CONSTRAINT "FK_35db242a805855ae374834fd9f8" 
+          FOREIGN KEY ("city_id") REFERENCES "cities"("id") 
+          ON DELETE RESTRICT;
+        END IF;
+      END $$;
+    `);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

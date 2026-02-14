@@ -95,38 +95,12 @@ export class CreateAirplanesTable1769447907351 implements MigrationInterface {
       true,
     );
 
-    await queryRunner.createIndex(
-      'airplanes',
-      new TableIndex({
-        name: 'idx_airplanes_model_number',
-        columnNames: ['model_number'],
-      }),
-    );
-
-    await queryRunner.createIndex(
-      'airplanes',
-      new TableIndex({
-        name: 'idx_airplanes_manufacturer',
-        columnNames: ['manufacturer'],
-      }),
-    );
-
-    await queryRunner.createIndex(
-      'airplanes',
-      new TableIndex({
-        name: 'idx_airplanes_registration_number',
-        columnNames: ['registration_number'],
-        isUnique: true,
-      }),
-    );
-
-    await queryRunner.createIndex(
-      'airplanes',
-      new TableIndex({
-        name: 'idx_airplanes_active',
-        columnNames: ['active'],
-      }),
-    );
+    await queryRunner.query(`
+      CREATE INDEX IF NOT EXISTS "idx_airplanes_model_number" ON "airplanes" ("model_number");
+      CREATE INDEX IF NOT EXISTS "idx_airplanes_manufacturer" ON "airplanes" ("manufacturer");
+      CREATE UNIQUE INDEX IF NOT EXISTS "idx_airplanes_registration_number" ON "airplanes" ("registration_number");
+      CREATE INDEX IF NOT EXISTS "idx_airplanes_active" ON "airplanes" ("active");
+    `);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

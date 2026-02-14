@@ -7,23 +7,27 @@ import {
   Param,
   Query,
   Req,
+  HttpStatus,
 } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { MessagePattern as MP } from '@app/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { BookingService } from './booking.service';
-import { CreateBookingDto } from '../booking-saga/booking-saga.orchestrator';
+import { CreateBookingDto } from '../booking-saga/saga-orchestrator.service';
 import { RateLimit } from '@app/rate-limiter';
 
 @ApiTags('Bookings')
 @Controller('bookings')
 @ApiBearerAuth()
 export class BookingController {
-  constructor(private readonly bookingService: BookingService) {}
+  constructor(private readonly bookingService: BookingService) { }
 
   @Post()
   @RateLimit({ points: 3, duration: 60, blockDuration: 300 })
   @ApiOperation({ summary: 'Create a new booking' })
+  @ApiResponse({ status: HttpStatus.CREATED, description: 'Booking initiated successfully' })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Invalid input' })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
   async createBooking(@Body() dto: CreateBookingDto, @Req() req: any) {
     const data = await this.bookingService.createBooking(dto, req.user.id);
     return {
@@ -40,6 +44,8 @@ export class BookingController {
   @Post(':bookingId/complete')
   @RateLimit({ points: 5, duration: 60 })
   @ApiOperation({ summary: 'Complete booking after payment' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Booking confirmed successfully' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Booking not found' })
   async completeBooking(
     @Param('bookingId') bookingId: string,
     @Body() paymentDto: { paymentTransactionId: string },
@@ -63,6 +69,8 @@ export class BookingController {
   @Put(':bookingId/cancel')
   @RateLimit({ points: 5, duration: 60 })
   @ApiOperation({ summary: 'Cancel a booking' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Booking cancelled successfully' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Booking not found' })
   async cancelBooking(
     @Param('bookingId') bookingId: string,
     @Body() cancelDto: { reason?: string },
@@ -86,6 +94,8 @@ export class BookingController {
   @Put(':bookingId/extend')
   @RateLimit({ points: 2, duration: 60 })
   @ApiOperation({ summary: 'Extend booking expiry time' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Booking extended successfully' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Booking not found' })
   async extendBooking(@Param('bookingId') bookingId: string, @Req() req: any) {
     const data = await this.bookingService.extendBooking(
       bookingId,

@@ -11,7 +11,6 @@ import { CityController } from './controllers/city.controller';
 import { AirportController } from './controllers/airport.controller';
 import { AirplaneController } from './controllers/airplane.controller';
 import { SeatController } from './controllers/seat.controller';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import {
   CookieService,
@@ -22,6 +21,7 @@ import {
   GlobalExceptionFilter,
   winstonLoggerConfig,
   LoggingInterceptor,
+  JwtAuthGuard,
 } from '@app/common';
 import { WinstonModule } from 'nest-winston';
 import { TerminusModule } from '@nestjs/terminus';
@@ -86,6 +86,11 @@ import { RateLimiterModule } from '@app/rate-limiter';
             queue: 'flight_queue',
             queueOptions: {
               durable: true,
+              arguments: {
+                'x-dead-letter-exchange': '',
+                'x-dead-letter-routing-key': 'flight_queue_retry',
+                'x-max-length': 10000,
+              },
             },
           },
         }),
@@ -101,6 +106,11 @@ import { RateLimiterModule } from '@app/rate-limiter';
             queue: 'booking_queue',
             queueOptions: {
               durable: true,
+              arguments: {
+                'x-dead-letter-exchange': '',
+                'x-dead-letter-routing-key': 'booking_queue_retry',
+                'x-max-length': 10000,
+              },
             },
           },
         }),
@@ -142,4 +152,4 @@ import { RateLimiterModule } from '@app/rate-limiter';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }

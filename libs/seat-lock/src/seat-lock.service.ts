@@ -15,7 +15,7 @@ export class SeatLockService {
 
   private readonly LOCK_TTL = 900; // 15 minutes
 
-  constructor(private readonly redisService: RedisService) {}
+  constructor(private readonly redisService: RedisService) { }
 
   async lockSeats(
     flightId: number,
@@ -116,6 +116,16 @@ export class SeatLockService {
             end
         `;
 
+    if (seats.length === 0) {
+      return {
+        success: true,
+        lockedSeats: [],
+        failedSeats: [],
+        lockKey: bookingKey,
+        expiresAt: new Date(timestamp + this.LOCK_TTL * 1000),
+      };
+    }
+
     const result = (await redis.eval(
       luaScript,
       0,
@@ -159,25 +169,30 @@ export class SeatLockService {
 
   async releaseSeats(flightId: number, bookingId: string): Promise<void> {
     const redis = this.redisService.getClient();
-
     const bookingKey = this.getBookingKey(flightId, bookingId);
-    const bookingData = await redis.get(bookingKey);
 
-    if (!bookingData) return;
+    try {
+      const bookingData = await redis.get(bookingKey);
+      if (!bookingData) {
+        this.logger.warn(`No lock found for booking ${bookingId}`);
+        return;
+      }
 
-    const parsed = JSON.parse(bookingData);
+      const { seats } = JSON.parse(bookingData);
 
-    const pipeline = redis.pipeline();
+      // Delete individual seat locks
+      const pipeline = redis.pipeline();
+      seats.forEach((seat: string) => {
+        pipeline.del(this.getSeatKey(flightId, seat));
+      });
+      pipeline.del(bookingKey);
 
-    parsed.seats.forEach((seat: string) => {
-      pipeline.del(this.getSeatKey(flightId, seat));
-    });
-
-    pipeline.del(bookingKey);
-
-    await pipeline.exec();
-
-    this.logger.log(`Released seats for booking ${bookingId}`);
+      await pipeline.exec();
+      this.logger.log(`Released ${seats.length} seats for booking ${bookingId}`);
+    } catch (error) {
+      this.logger.error(`Error releasing seats for booking ${bookingId}:`, error);
+      throw error;
+    }
   }
 
   // =============================================
@@ -268,8 +283,9 @@ export class SeatLockService {
     // Example:
     // const validSeats = await flightSeatRepo.find()
 
-    if (!seats.length) {
-      throw new Error('No seats provided');
+    if (seats.length > 0) {
+      // Validate individual seats if provided
+      // this.logger.log(`Validating ${seats.length} seats for flight ${flightId}`);
     }
   }
 }

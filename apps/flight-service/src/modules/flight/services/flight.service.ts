@@ -52,7 +52,13 @@ export class FlightService {
   }
 
   async search(searchDto: SharedSearchFlightDto): Promise<Flight[]> {
-    return this.flightRepository.search(searchDto);
+    const flights = await this.flightRepository.search(searchDto);
+    console.log('FlightService.search result count:', flights.length);
+    if (flights.length > 0) {
+      console.log('First flight keys:', Object.keys(flights[0]));
+      console.log('First flight airplane keys:', flights[0].airplane ? Object.keys(flights[0].airplane) : 'No airplane');
+    }
+    return flights;
   }
 
   async findOne(id: number): Promise<Flight> {

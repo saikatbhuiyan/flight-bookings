@@ -69,22 +69,17 @@ export class CreateCitiesTable1769390108705 implements MigrationInterface {
       true,
     );
 
-    await queryRunner.createIndex(
-      'cities',
-      new TableIndex({
-        name: 'idx_cities_name',
-        columnNames: ['name'],
-        isUnique: true,
-      }),
-    );
+    await queryRunner.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS "idx_cities_name" ON "cities" ("name");
+    `);
 
-    await queryRunner.createIndex(
-      'cities',
-      new TableIndex({
-        name: 'idx_cities_country',
-        columnNames: ['country'],
-      }),
-    );
+    await queryRunner.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS "cities_name_country_unique" ON "cities" ("name", "country");
+    `);
+
+    await queryRunner.query(`
+      CREATE INDEX IF NOT EXISTS "idx_cities_country" ON "cities" ("country");
+    `);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

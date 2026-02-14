@@ -125,7 +125,7 @@ export enum MessagePattern {
   FLIGHT_CREATE = 'flight.create',
   FLIGHT_FIND_ALL = 'flight.findAll',
   FLIGHT_FIND_BY_ID = 'flight.findById',
-  FLIGHT_SEARCH = 'flight.search',
+  FLIGHT_SEARCH = 'flight.search.v2',
   FLIGHT_UPDATE = 'flight.update',
   FLIGHT_DELETE = 'flight.delete',
 

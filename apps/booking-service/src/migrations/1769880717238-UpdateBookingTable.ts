@@ -4,13 +4,13 @@ export class UpdateBookingTable1769880717238 implements MigrationInterface {
   name = 'UpdateBookingTable1769880717238';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP INDEX "public"."idx_bookings_user_id"`);
-    await queryRunner.query(`DROP INDEX "public"."idx_bookings_flight_id"`);
-    await queryRunner.query(`DROP INDEX "public"."idx_bookings_status"`);
-    await queryRunner.query(`DROP INDEX "public"."idx_bookings_created_at"`);
-    await queryRunner.query(`DROP INDEX "public"."idx_bookings_user_status"`);
-    await queryRunner.query(`DROP INDEX "public"."idx_bookings_active"`);
-    await queryRunner.query(`DROP INDEX "public"."idx_bookings_expired"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "public"."idx_bookings_user_id"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "public"."idx_bookings_flight_id"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "public"."idx_bookings_status"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "public"."idx_bookings_created_at"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "public"."idx_bookings_user_status"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "public"."idx_bookings_active"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "public"."idx_bookings_expired"`);
     await queryRunner.query(
       `ALTER TABLE "bookings" DROP COLUMN "seat_numbers"`,
     );

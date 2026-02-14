@@ -8,10 +8,15 @@ import {
 
 export class CreateSeatsTable1769448089690 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // Create enum type
+    // Create enum type idempotently
     await queryRunner.query(`
-            CREATE TYPE seat_type AS ENUM ('ECONOMY', 'BUSINESS', 'FIRST_CLASS', 'PREMIUM_ECONOMY');
-        `);
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'seat_type') THEN
+          CREATE TYPE seat_type AS ENUM ('ECONOMY', 'BUSINESS', 'FIRST_CLASS', 'PREMIUM_ECONOMY');
+        END IF;
+      END $$;
+    `);
 
     await queryRunner.createTable(
       new Table({
@@ -59,40 +64,36 @@ export class CreateSeatsTable1769448089690 implements MigrationInterface {
       true,
     );
 
-    // Create unique constraint
+    // Create unique constraint idempotently
     await queryRunner.query(`
-      ALTER TABLE seats 
-      ADD CONSTRAINT uq_seats_airplane_row_col 
-      UNIQUE (airplane_id, row, col);
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'uq_seats_airplane_row_col') THEN
+          ALTER TABLE seats 
+          ADD CONSTRAINT uq_seats_airplane_row_col 
+          UNIQUE (airplane_id, row, col);
+        END IF;
+      END $$;
     `);
 
     // Create indexes
-    await queryRunner.createIndex(
-      'seats',
-      new TableIndex({
-        name: 'idx_seats_airplane_id',
-        columnNames: ['airplane_id'],
-      }),
-    );
-
-    await queryRunner.createIndex(
-      'seats',
-      new TableIndex({
-        name: 'idx_seats_type',
-        columnNames: ['type'],
-      }),
-    );
+    // Create indexes idempotently
+    await queryRunner.query(`
+      CREATE INDEX IF NOT EXISTS "idx_seats_airplane_id" ON "seats" ("airplane_id");
+      CREATE UNIQUE INDEX IF NOT EXISTS "seats_airplane_row_col_unique" ON "seats" ("airplane_id", "row", "col");
+      CREATE INDEX IF NOT EXISTS "idx_seats_type" ON "seats" ("type");
+    `);
 
     // Create foreign key
-    await queryRunner.createForeignKey(
-      'seats',
-      new TableForeignKey({
-        columnNames: ['airplane_id'],
-        referencedColumnNames: ['id'],
-        referencedTableName: 'airplanes',
-        onDelete: 'CASCADE',
-      }),
-    );
+    // Create foreign key idempotently
+    await queryRunner.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'FK_airplane_seats') THEN
+          ALTER TABLE seats ADD CONSTRAINT "FK_airplane_seats" FOREIGN KEY ("airplane_id") REFERENCES "airplanes"("id") ON DELETE CASCADE;
+        END IF;
+      END $$;
+    `);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

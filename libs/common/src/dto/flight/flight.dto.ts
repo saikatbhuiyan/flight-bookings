@@ -20,17 +20,17 @@ export class SharedCreateFlightDto {
   @IsNotEmpty()
   flightNumber: string;
 
-  @ApiProperty({ description: 'Airplane ID' })
+  @ApiProperty({ description: 'Airplane ID', example: 1 })
   @IsInt()
   @IsNotEmpty()
   airplaneId: number;
 
-  @ApiProperty({ description: 'Departure airport ID' })
+  @ApiProperty({ description: 'Departure airport ID', example: 1 })
   @IsInt()
   @IsNotEmpty()
   departureAirportId: number;
 
-  @ApiProperty({ description: 'Arrival airport ID' })
+  @ApiProperty({ description: 'Arrival airport ID', example: 2 })
   @IsInt()
   @IsNotEmpty()
   arrivalAirportId: number;

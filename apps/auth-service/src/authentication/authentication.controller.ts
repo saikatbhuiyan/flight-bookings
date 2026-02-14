@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Req,
+  UseFilters,
 } from '@nestjs/common';
 import {
   Ctx,
@@ -23,15 +24,17 @@ import {
   SignUpDto,
   ApiResponseDto,
   Public,
+  CommonRpcExceptionFilter,
 } from '@app/common';
 import { Request } from 'express';
 
 @ApiTags('Authentication')
 @Controller('auth')
+@UseFilters(CommonRpcExceptionFilter)
 export class AuthMessageController {
   private readonly logger = new Logger(AuthMessageController.name);
 
-  constructor(private readonly authService: AuthenticationService) {}
+  constructor(private readonly authService: AuthenticationService) { }
 
   @Public()
   @Post('register')
