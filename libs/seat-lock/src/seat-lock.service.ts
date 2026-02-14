@@ -116,6 +116,16 @@ export class SeatLockService {
             end
         `;
 
+    if (seats.length === 0) {
+      return {
+        success: true,
+        lockedSeats: [],
+        failedSeats: [],
+        lockKey: bookingKey,
+        expiresAt: new Date(timestamp + this.LOCK_TTL * 1000),
+      };
+    }
+
     const result = (await redis.eval(
       luaScript,
       0,
@@ -273,8 +283,9 @@ export class SeatLockService {
     // Example:
     // const validSeats = await flightSeatRepo.find()
 
-    if (!seats.length) {
-      throw new Error('No seats provided');
+    if (seats.length > 0) {
+      // Validate individual seats if provided
+      // this.logger.log(`Validating ${seats.length} seats for flight ${flightId}`);
     }
   }
 }

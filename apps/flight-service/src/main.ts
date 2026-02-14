@@ -4,10 +4,11 @@ import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { FlightServiceModule } from './flight-service.module';
-import { CommonRpcExceptionFilter, RmqSetup } from '@app/common';
+import { CommonRpcExceptionFilter, RmqSetup, MessagePattern as MP } from '@app/common';
 import { initializeTracing } from '@app/telemetry';
 
 async function bootstrap() {
+  console.log('DEBUG: MP.FLIGHT_SEARCH =', MP.FLIGHT_SEARCH);
   const logger = new Logger('FlightService');
   const app = await NestFactory.create(FlightServiceModule);
   const configService = app.get(ConfigService);
@@ -36,9 +37,9 @@ async function bootstrap() {
         },
       },
       prefetchCount: 1,
-      noAck: false,
+      noAck: true,
     },
-  });
+  }, { inheritAppConfig: true });
 
   app.useGlobalPipes(
     new ValidationPipe({

@@ -11,17 +11,21 @@ export class AddSagaAndOutbox1770486663295 implements MigrationInterface {
     public async up(queryRunner: QueryRunner): Promise<void> {
         // Create saga_states_status_enum
         await queryRunner.query(`
-      CREATE TYPE "public"."saga_states_status_enum" AS ENUM(
-        'INITIATED', 
-        'SEATS_LOCKED', 
-        'FLIGHT_RESERVED', 
-        'PAYMENT_PROCESSING', 
-        'PAYMENT_COMPLETED', 
-        'BOOKING_CONFIRMED', 
-        'FAILED', 
-        'COMPENSATING', 
-        'COMPENSATED'
-      )
+      DO $$ BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'saga_states_status_enum') THEN
+          CREATE TYPE "public"."saga_states_status_enum" AS ENUM(
+            'INITIATED', 
+            'SEATS_LOCKED', 
+            'FLIGHT_RESERVED', 
+            'PAYMENT_PROCESSING', 
+            'PAYMENT_COMPLETED', 
+            'BOOKING_CONFIRMED', 
+            'FAILED', 
+            'COMPENSATING', 
+            'COMPENSATED'
+          );
+        END IF;
+      END $$;
     `);
 
         // Create saga_states table
@@ -149,29 +153,22 @@ export class AddSagaAndOutbox1770486663295 implements MigrationInterface {
         );
 
         // Create saga_states indexes
-        await queryRunner.createIndices('saga_states', [
-            new TableIndex({
-                name: 'IDX_3ba29ee0383d442fa0e4f6dbba',
-                columnNames: ['created_at'],
-            }),
-            new TableIndex({
-                name: 'IDX_c707d2bbf2290a58023d4f9b16',
-                columnNames: ['status'],
-            }),
-            new TableIndex({
-                name: 'IDX_b55caaedced424e15f452ea7bd',
-                columnNames: ['booking_id'],
-            }),
-        ]);
+        await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_3ba29ee0383d442fa0e4f6dbba" ON "saga_states" ("created_at")`);
+        await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_c707d2bbf2290a58023d4f9b16" ON "saga_states" ("status")`);
+        await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_b55caaedced424e15f452ea7bd" ON "saga_states" ("booking_id")`);
 
         // Create outbox_events_status_enum
         await queryRunner.query(`
-      CREATE TYPE "public"."outbox_events_status_enum" AS ENUM(
-        'PENDING', 
-        'PROCESSING', 
-        'PUBLISHED', 
-        'FAILED'
-      )
+      DO $$ BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'outbox_events_status_enum') THEN
+          CREATE TYPE "public"."outbox_events_status_enum" AS ENUM(
+            'PENDING', 
+            'PROCESSING', 
+            'PUBLISHED', 
+            'FAILED'
+          );
+        END IF;
+      END $$;
     `);
 
         // Create outbox_events table
@@ -268,20 +265,9 @@ export class AddSagaAndOutbox1770486663295 implements MigrationInterface {
         );
 
         // Create outbox_events indexes
-        await queryRunner.createIndices('outbox_events', [
-            new TableIndex({
-                name: 'IDX_287c7ad6ab8e2fc1f2e25b59e4',
-                columnNames: ['event_type'],
-            }),
-            new TableIndex({
-                name: 'IDX_85ca65d119cee338ec8d714bfa',
-                columnNames: ['aggregate_id'],
-            }),
-            new TableIndex({
-                name: 'IDX_cc0d2a98103923a41a9aebc384',
-                columnNames: ['status', 'created_at'],
-            }),
-        ]);
+        await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_287c7ad6ab8e2fc1f2e25b59e4" ON "outbox_events" ("event_type")`);
+        await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_85ca65d119cee338ec8d714bfa" ON "outbox_events" ("aggregate_id")`);
+        await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_cc0d2a98103923a41a9aebc384" ON "outbox_events" ("status", "created_at")`);
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {

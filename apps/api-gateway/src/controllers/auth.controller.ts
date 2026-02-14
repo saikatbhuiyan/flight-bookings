@@ -21,6 +21,7 @@ import {
   CurrentUser,
   ClientType,
   CookieService,
+  JwtAuthGuard,
 } from '@app/common';
 import type { Request, Response } from 'express';
 import {
@@ -29,7 +30,6 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import {
   SignUpDto as RegisterDto,
   SignInDto,
@@ -50,7 +50,7 @@ export class AuthController {
   constructor(
     @Inject('AUTH_SERVICE') private readonly authClient: ClientProxy,
     private readonly cookieService: CookieService,
-  ) {}
+  ) { }
 
   // --- REGISTER ---------------------------------------------------
   @Public()
@@ -193,34 +193,40 @@ export class AuthController {
     try {
       return await firstValueFrom(this.authClient.send<T>(pattern, data));
     } catch (error) {
-      const rpcError = error;
-      console.error(`[Gateway] Error calling ${pattern}:`, rpcError);
+      const rpcError = error as any;
+      console.error(`[Gateway] Error calling ${pattern}:`, JSON.stringify(rpcError, null, 2));
 
       // Extract status: handle numeric and standard RMQ status formats
       let status = HttpStatus.INTERNAL_SERVER_ERROR;
+
+      // Look for status in common locations
       if (typeof rpcError.status === 'number') {
         status = rpcError.status;
-      } else if (
-        rpcError.statusCode &&
-        typeof rpcError.statusCode === 'number'
-      ) {
+      } else if (typeof rpcError.statusCode === 'number') {
         status = rpcError.statusCode;
+      } else if (rpcError.response?.status && typeof rpcError.response.status === 'number') {
+        status = rpcError.response.status;
+      } else if (rpcError.response?.statusCode && typeof rpcError.response.statusCode === 'number') {
+        status = rpcError.response.statusCode;
       }
 
       // Extract message: handle string, array, or nested object formats
       let message = 'Internal server error';
       if (typeof rpcError.message === 'string') {
         message = rpcError.message;
+      } else if (typeof rpcError.response === 'string') {
+        message = rpcError.response;
+      } else if (rpcError.response && typeof rpcError.response === 'object') {
+        const res = rpcError.response;
+        message = res.message || res.error || JSON.stringify(res);
       } else if (rpcError.message && typeof rpcError.message === 'object') {
-        // Handle NestJS standard error response object: { message: "...", error: "...", statusCode: ... }
-        message =
-          rpcError.message.message ||
-          rpcError.message.error ||
-          JSON.stringify(rpcError.message);
+        const msg = rpcError.message;
+        message = msg.message || msg.error || JSON.stringify(msg);
       } else if (rpcError.error && typeof rpcError.error === 'string') {
         message = rpcError.error;
       }
 
+      console.log(`[Gateway] Extracted status: ${status}, message: ${message}`);
       throw new HttpException(message, status);
     }
   }

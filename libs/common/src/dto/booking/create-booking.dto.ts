@@ -8,7 +8,7 @@ import {
 } from 'class-validator';
 
 export class CreateBookingDto {
-  @ApiProperty({ example: 'uuid-of-flight', description: 'ID of the flight' })
+  @ApiProperty({ example: '1', description: 'ID of the flight' })
   @IsString()
   @IsNotEmpty()
   flightId: string;
@@ -22,4 +22,16 @@ export class CreateBookingDto {
   @IsString()
   @IsOptional()
   seatPreference?: string;
+
+  @ApiPropertyOptional({ example: 'ECONOMY', description: 'Seat class' })
+  @IsString()
+  @IsOptional()
+  seatClass?: string;
+
+  @ApiPropertyOptional({
+    example: ['1A'],
+    description: 'Specific seat numbers',
+  })
+  @IsOptional()
+  seatNumbers?: string[];
 }

@@ -11,7 +11,6 @@ import { CityController } from './controllers/city.controller';
 import { AirportController } from './controllers/airport.controller';
 import { AirplaneController } from './controllers/airplane.controller';
 import { SeatController } from './controllers/seat.controller';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import {
   CookieService,
@@ -22,6 +21,7 @@ import {
   GlobalExceptionFilter,
   winstonLoggerConfig,
   LoggingInterceptor,
+  JwtAuthGuard,
 } from '@app/common';
 import { WinstonModule } from 'nest-winston';
 import { TerminusModule } from '@nestjs/terminus';

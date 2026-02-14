@@ -11,18 +11,20 @@ import { trace, context as otelContext, SpanStatusCode } from '@opentelemetry/ap
 
 export interface CreateBookingDto {
   userId: number;
-  flightId: number;
-  seatNumbers: string[];
-  seatClass: string;
-  totalCost: number;
-  passengerName: string;
-  passengerEmail: string;
-  passengerPhone: string;
+  flightId: string | number;
+  seats: number;
+  seatNumbers?: string[];
+  seatClass?: string;
+  totalCost?: number;
+  passengerName?: string;
+  passengerEmail?: string;
+  passengerPhone?: string;
+  seatPreference?: string;
 }
 
 @Injectable()
-export class SagaOrchestratorService {
-  private readonly logger = new Logger(SagaOrchestratorService.name);
+export class BookingSagaOrchestrator {
+  private readonly logger = new Logger(BookingSagaOrchestrator.name);
   private readonly tracer = trace.getTracer('booking-service');
 
   constructor(
@@ -69,6 +71,7 @@ export class SagaOrchestratorService {
       // Create saga state
       const sagaState = await this.sagaStateRepository.save({
         sagaId,
+        sagaType: 'CREATE_BOOKING',
         bookingId,
         status: SagaStatus.INITIATED,
         currentStep: 0,
@@ -115,17 +118,28 @@ export class SagaOrchestratorService {
       await this.dataSource.transaction(async (manager) => {
         const dto = sagaState.payload as CreateBookingDto;
 
+        // Resolve seat class: specific seatClass > seatPreference (if it's a valid class) > ECONOMY
+        const seatClasses = ['ECONOMY', 'PREMIUM_ECONOMY', 'BUSINESS', 'FIRST_CLASS'];
+        let resolvedSeatClass = dto.seatClass || 'ECONOMY';
+
+        if (!dto.seatClass && dto.seatPreference) {
+          const upperPreference = dto.seatPreference.toUpperCase();
+          if (seatClasses.includes(upperPreference)) {
+            resolvedSeatClass = upperPreference;
+          }
+        }
+
         const booking = manager.create(Booking, {
           bookingReference: sagaState.bookingId,
           userId: dto.userId,
-          flightId: dto.flightId,
-          noOfSeats: dto.seatNumbers.length,
-          seatNumbers: dto.seatNumbers,
-          seatClass: dto.seatClass,
-          totalCost: dto.totalCost,
-          passengerName: dto.passengerName,
-          passengerEmail: dto.passengerEmail,
-          passengerPhone: dto.passengerPhone,
+          flightId: Number(dto.flightId),
+          noOfSeats: dto.seats || (dto.seatNumbers ? dto.seatNumbers.length : 1),
+          seatNumbers: dto.seatNumbers || [],
+          seatClass: resolvedSeatClass,
+          totalCost: dto.totalCost || 0,
+          passengerName: dto.passengerName || 'Unknown',
+          passengerEmail: dto.passengerEmail || '',
+          passengerPhone: dto.passengerPhone || '',
           status: BookingStatus.INITIATED,
           paymentStatus: PaymentStatus.PENDING,
           expiresAt: new Date(Date.now() + 15 * 60 * 1000),
@@ -173,22 +187,22 @@ export class SagaOrchestratorService {
 
       const dto = sagaState.payload as CreateBookingDto;
 
-      const lockResult = await this.seatLockService.lockSeats(
-        dto.flightId,
-        dto.seatNumbers,
+      const locked = await this.seatLockService.lockSeats(
+        Number(dto.flightId),
+        dto.seatNumbers || [],
         sagaState.bookingId,
         dto.userId,
       );
 
-      if (!lockResult.success) {
-        throw new Error(`Failed to lock seats: ${lockResult.failedSeats.join(', ')}`);
+      if (!locked.success) {
+        throw new Error(`Failed to lock seats: ${locked.failedSeats.join(', ')}`);
       }
 
       // Update saga state
       await this.dataSource.transaction(async (manager) => {
         sagaState.currentStep = 2;
         sagaState.status = SagaStatus.SEATS_LOCKED;
-        sagaState.context = { ...sagaState.context, lockKey: lockResult.lockKey };
+        sagaState.context = { ...sagaState.context, lockKey: locked.lockKey };
         await manager.save(SagaState, sagaState);
       });
 
@@ -225,10 +239,10 @@ export class SagaOrchestratorService {
           sagaState.bookingId,
           'flight.reserve-seats',
           {
-            flightId: dto.flightId,
+            flightId: Number(dto.flightId), // Coerce to number
             bookingId: sagaState.bookingId,
-            seatClass: dto.seatClass,
-            seatCount: dto.seatNumbers.length,
+            seatClass: dto.seatClass || 'ECONOMY', // Provide default
+            seatCount: dto.seats || (dto.seatNumbers ? dto.seatNumbers.length : 1), // Provide default
           },
           manager,
         );
@@ -289,10 +303,10 @@ export class SagaOrchestratorService {
           bookingId,
           'flight.confirm-seats',
           {
-            flightId: dto.flightId,
+            flightId: Number(dto.flightId), // Coerce to number
             bookingId,
-            seatClass: dto.seatClass,
-            seatCount: dto.seatNumbers.length,
+            seatClass: dto.seatClass || 'ECONOMY', // Provide default
+            seatCount: dto.seats || (dto.seatNumbers ? dto.seatNumbers.length : 1), // Provide default
           },
           manager,
         );
@@ -326,7 +340,8 @@ export class SagaOrchestratorService {
       });
 
       // Release Redis locks (outside transaction)
-      await this.seatLockService.releaseSeats(dto.flightId, bookingId);
+      const dto = sagaState.payload as CreateBookingDto;
+      await this.seatLockService.releaseSeats(Number(dto.flightId), bookingId); // Coerce to number
 
       span.setStatus({ code: SpanStatusCode.OK });
       return await this.bookingRepository.findOne({
@@ -338,6 +353,25 @@ export class SagaOrchestratorService {
     } finally {
       span.end();
     }
+  }
+
+  /**
+   * Public method to cancel a booking (compensate step 3 down)
+   */
+  async cancelBooking(bookingId: string, reason: string): Promise<Booking> {
+    const sagaState = await this.sagaStateRepository.findOne({
+      where: { bookingId },
+    });
+
+    if (!sagaState) {
+      throw new Error('Saga state not found');
+    }
+
+    await this.compensate(sagaState, new Error(reason));
+
+    return await this.bookingRepository.findOne({
+      where: { bookingReference: bookingId },
+    });
   }
 
   /**
@@ -363,17 +397,19 @@ export class SagaOrchestratorService {
         if (sagaState.currentStep >= 3) {
           const dto = sagaState.payload as CreateBookingDto;
 
+          const payload = {
+            bookingId: sagaState.bookingId,
+            flightId: Number(dto.flightId), // Coerce to number
+            seatClass: dto.seatClass || 'ECONOMY', // Provide default
+            seatCount: dto.seats || (dto.seatNumbers ? dto.seatNumbers.length : 1), // Provide default
+          };
+
           // Release flight seats via outbox
           await this.outboxService.storeEvent(
             'BOOKING',
             sagaState.bookingId,
             'flight.release-seats',
-            {
-              flightId: dto.flightId,
-              bookingId: sagaState.bookingId,
-              seatClass: dto.seatClass,
-              seatCount: dto.seatNumbers.length,
-            },
+            payload,
             manager,
           );
         }
@@ -381,7 +417,7 @@ export class SagaOrchestratorService {
         if (sagaState.currentStep >= 2) {
           // Release Redis locks (outside transaction)
           const dto = sagaState.payload as CreateBookingDto;
-          await this.seatLockService.releaseSeats(dto.flightId, sagaState.bookingId);
+          await this.seatLockService.releaseSeats(Number(dto.flightId), sagaState.bookingId);
         }
 
         // Update booking to cancelled

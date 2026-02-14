@@ -46,7 +46,7 @@ export class Booking {
   @Column({
     name: 'booking_reference',
     type: 'varchar',
-    length: 10,
+    length: 36,
     nullable: false,
     unique: true,
   })

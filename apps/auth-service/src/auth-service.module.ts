@@ -55,11 +55,11 @@ import authConfig from '@app/common/config/auth.config';
     },
     {
       provide: APP_FILTER,
-      useClass: CommonRpcExceptionFilter,
+      useClass: GlobalExceptionFilter,
     },
     {
       provide: APP_FILTER,
-      useClass: GlobalExceptionFilter,
+      useClass: CommonRpcExceptionFilter,
     },
     {
       provide: HashingService,
@@ -83,4 +83,4 @@ import authConfig from '@app/common/config/auth.config';
   ],
   controllers: [AuthMessageController],
 })
-export class AuthServiceModule {}
+export class AuthServiceModule { }

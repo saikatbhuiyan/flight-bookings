@@ -4,24 +4,32 @@ export class CreateBookingTable1738342079000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Create enum types
     await queryRunner.query(`
-      CREATE TYPE booking_status AS ENUM (
-        'INITIATED', 
-        'PENDING', 
-        'BOOKED', 
-        'CANCELLED', 
-        'EXPIRED', 
-        'REFUNDED'
-      );
+      DO $$ BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'booking_status') THEN
+          CREATE TYPE booking_status AS ENUM (
+            'INITIATED', 
+            'PENDING', 
+            'BOOKED', 
+            'CANCELLED', 
+            'EXPIRED', 
+            'REFUNDED'
+          );
+        END IF;
+      END $$;
     `);
 
     await queryRunner.query(`
-      CREATE TYPE payment_status AS ENUM (
-        'PENDING', 
-        'PROCESSING', 
-        'COMPLETED', 
-        'FAILED', 
-        'REFUNDED'
-      );
+      DO $$ BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_status') THEN
+          CREATE TYPE payment_status AS ENUM (
+            'PENDING', 
+            'PROCESSING', 
+            'COMPLETED', 
+            'FAILED', 
+            'REFUNDED'
+          );
+        END IF;
+      END $$;
     `);
 
     // Create bookings table
@@ -212,60 +220,26 @@ export class CreateBookingTable1738342079000 implements MigrationInterface {
           },
         ],
       }),
-      true,
+      true, // ifNotExists: true
     );
 
     // Create indexes
-    await queryRunner.createIndex(
-      'bookings',
-      new TableIndex({
-        name: 'idx_bookings_user_id',
-        columnNames: ['user_id'],
-      }),
-    );
-
-    await queryRunner.createIndex(
-      'bookings',
-      new TableIndex({
-        name: 'idx_bookings_flight_id',
-        columnNames: ['flight_id'],
-      }),
-    );
-
-    await queryRunner.createIndex(
-      'bookings',
-      new TableIndex({
-        name: 'idx_bookings_status',
-        columnNames: ['status'],
-      }),
-    );
-
-    await queryRunner.createIndex(
-      'bookings',
-      new TableIndex({
-        name: 'idx_bookings_created_at',
-        columnNames: ['created_at'],
-      }),
-    );
-
-    await queryRunner.createIndex(
-      'bookings',
-      new TableIndex({
-        name: 'idx_bookings_user_status',
-        columnNames: ['user_id', 'status'],
-      }),
-    );
+    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_bookings_user_id ON bookings(user_id);`);
+    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_bookings_flight_id ON bookings(flight_id);`);
+    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);`);
+    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_bookings_created_at ON bookings(created_at);`);
+    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_bookings_user_status ON bookings(user_id, status);`);
 
     // Create partial index for active bookings
     await queryRunner.query(`
-      CREATE INDEX idx_bookings_active 
+      CREATE INDEX IF NOT EXISTS idx_bookings_active 
       ON bookings (user_id, flight_id) 
       WHERE status IN ('INITIATED', 'PENDING', 'BOOKED');
     `);
 
     // Create index for expired bookings cleanup
     await queryRunner.query(`
-      CREATE INDEX idx_bookings_expired 
+      CREATE INDEX IF NOT EXISTS idx_bookings_expired 
       ON bookings (expires_at) 
       WHERE status = 'INITIATED' AND expires_at IS NOT NULL;
     `);

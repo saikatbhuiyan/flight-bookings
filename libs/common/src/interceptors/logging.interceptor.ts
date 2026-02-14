@@ -35,57 +35,94 @@ export class LoggingInterceptor implements NestInterceptor {
   }
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    const http = context.switchToHttp();
-    const request = http.getRequest<Request>();
-    const response = http.getResponse<Response>();
+    const contextType = context.getType();
+    const isHttp = contextType === 'http';
+    const isRpc = contextType === 'rpc';
 
-    const { method, url, ip } = request;
-    const userAgent = request.get('User-Agent') || '';
-    const correlationId =
-      (request.headers['x-correlation-id'] as string) ||
-      (request as any).correlationId ||
-      randomUUID();
+    let method = 'UNKNOWN';
+    let url = 'UNKNOWN';
+    let ip = 'UNKNOWN';
+    let userAgent = '';
+    let correlationId = randomUUID();
+    let requestBody: any = {};
+    let requestHeaders: any = {};
+
+    try {
+      if (isHttp) {
+        const http = context.switchToHttp();
+        const request = http.getRequest<Request>();
+        method = request.method;
+        url = request.url;
+        ip = request.ip;
+        userAgent = request.get('User-Agent') || '';
+        correlationId =
+          (request.headers['x-correlation-id'] as string) ||
+          (request as any).correlationId ||
+          correlationId;
+        requestBody = request.body;
+        requestHeaders = request.headers;
+      } else if (isRpc) {
+        const rpcContext = context.switchToRpc();
+        const data = rpcContext.getData();
+        const ctx = rpcContext.getContext(); // RmqContext or similar
+        method = 'RPC';
+        url = context.getHandler().name;
+        // Try to find correlationId in data payload
+        if (data && typeof data === 'object') {
+          correlationId = data.correlationId || correlationId;
+        }
+        requestBody = data;
+      }
+    } catch (err) {
+      console.warn('Error extracting request context in LoggingInterceptor', err);
+    }
 
     const handlerName = context.getHandler().name;
     const controllerName = context.getClass().name;
     const startTime = Date.now();
 
+    console.log(`[LoggingInterceptor] INTERCEPT: ${controllerName}.${handlerName}`);
+
     // Log incoming request
     this.logger.log({
-      message: `[${correlationId}] Incoming Request: ${method} ${url}`,
-      event: 'request_received',
+      message: `[${correlationId}] Incoming ${isHttp ? 'Request' : 'Message'}: ${method} ${url}`,
+      event: isHttp ? 'request_received' : 'message_received',
       method,
       url,
-      ip,
-      userAgent,
+      ip: isHttp ? ip : undefined,
+      userAgent: isHttp ? userAgent : undefined,
       correlationId,
       controller: controllerName,
       handler: handlerName,
-      headers: this.isDev ? this.sanitize(request.headers) : undefined,
-      body: this.isDev ? this.sanitize(request.body) : undefined,
+      headers: isHttp && this.isDev ? this.sanitize(requestHeaders) : undefined,
+      body: this.isDev ? this.sanitize(requestBody) : undefined,
       timestamp: new Date().toISOString(),
     });
 
     return next.handle().pipe(
       tap((responseBody) => {
-        const { statusCode } = response;
+        console.log(`[LoggingInterceptor] TAP: ${controllerName}.${handlerName}`);
         const duration = Date.now() - startTime;
+        let statusCode = 200;
 
-        const requestSize = request.body
-          ? JSON.stringify(request.body).length
-          : 0;
-        const responseSize = responseBody
-          ? JSON.stringify(
-              this.isDev ? this.sanitize(responseBody) : responseBody,
-            ).length
-          : 0;
+        if (isHttp) {
+          const response = context.switchToHttp().getResponse<Response>();
+          statusCode = response.statusCode;
+        }
 
-        const message = `[${correlationId}] ${method} ${url} - ${statusCode} (${duration}ms)`;
+        const reqStr = this.safeStringify(requestBody);
+        const resStr = this.safeStringify(
+          this.isDev ? this.sanitize(responseBody) : responseBody,
+        );
+        const requestSize = reqStr ? reqStr.length : 0;
+        const responseSize = resStr ? resStr.length : 0;
+
+        const message = `[${correlationId}] ${method} ${url} - ${isHttp ? statusCode : 'OK'} (${duration}ms)`;
         const logData = {
-          event: 'response_sent',
+          event: isHttp ? 'response_sent' : 'message_processed',
           method,
           url,
-          statusCode,
+          statusCode: isHttp ? statusCode : undefined,
           duration,
           correlationId,
           controller: controllerName,
@@ -95,9 +132,9 @@ export class LoggingInterceptor implements NestInterceptor {
           timestamp: new Date().toISOString(),
         };
 
-        if (statusCode >= 500) {
+        if (isHttp && statusCode >= 500) {
           this.logger.error(message, logData as any);
-        } else if (statusCode >= 400) {
+        } else if (isHttp && statusCode >= 400) {
           this.logger.warn(message, logData as any);
         } else {
           this.logger.log(message, logData as any);
@@ -146,5 +183,22 @@ export class LoggingInterceptor implements NestInterceptor {
           : v;
     }
     return clone;
+  }
+
+  private safeStringify(obj: any): string {
+    const cache = new Set();
+    try {
+      return JSON.stringify(obj, (key, value) => {
+        if (typeof value === 'object' && value !== null) {
+          if (cache.has(value)) {
+            return '[Circular]';
+          }
+          cache.add(value);
+        }
+        return value;
+      });
+    } catch (error) {
+      return `[Stringify Error: ${error.message}]`;
+    }
   }
 }

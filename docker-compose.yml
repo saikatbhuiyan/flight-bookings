@@ -135,6 +135,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4318/v1/traces
     networks:
       - flight-booking-network
 
@@ -153,6 +155,8 @@ services:
       - /app/dist
     env_file:
       - ./apps/auth-service/.env
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4318/v1/traces
     depends_on:
       postgres:
         condition: service_healthy
@@ -178,6 +182,8 @@ services:
       - /app/dist
     env_file:
       - ./apps/flight-service/.env
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4318/v1/traces
     depends_on:
       postgres:
         condition: service_healthy
@@ -205,6 +211,8 @@ services:
       - /app/dist
     env_file:
       - ./apps/booking-service/.env
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4318/v1/traces
     depends_on:
       postgres:
         condition: service_healthy
@@ -230,6 +238,8 @@ services:
       - /app/dist
     env_file:
       - ./apps/notification-service/.env
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4318/v1/traces
     depends_on:
       postgres:
         condition: service_healthy
