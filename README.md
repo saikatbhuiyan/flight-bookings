@@ -1,8 +1,8 @@
 # Flight Booking Microservices System
 
-A production-grade, scalable microservices architecture for flight booking built with NestJS, RabbitMQ, PostgreSQL, Redis, and AWS S3.
+A production-grade, scalable microservices architecture for flight booking built with NestJS, featuring distributed tracing, event-driven architecture, and comprehensive observability.
 
-## 🏗️ Architecture
+## 🏗️ Architecture Overview
 
 ```
 ┌─────────────────┐
@@ -107,16 +107,39 @@ A production-grade, scalable microservices architecture for flight booking built
 - ✅ **API Gateway** with centralized routing and authentication
 - ✅ **JWT Authentication** with access and refresh tokens
 - ✅ **Role-Based Access Control** (RBAC)
-- ✅ **PostgreSQL** with TypeORM for data persistence
-- ✅ **Redis** for caching and session management
-- ✅ **S3-compatible storage** (AWS S3/LocalStack) with abstraction
-- ✅ **Event-driven notifications** system
+- ✅ **Database-per-Service Pattern** with isolated PostgreSQL databases
+- ✅ **Redis** for caching, session management, and distributed locking
+- ✅ **S3-compatible storage** (AWS S3/LocalStack) with abstraction layer
+- ✅ **Event-driven architecture** with RabbitMQ message broker
 - ✅ **Request rate limiting** and throttling
-- ✅ **Input validation** and sanitization
-- ✅ **Error handling** and logging
-- ✅ **Swagger API documentation**
-- ✅ **Docker & Docker Compose** setup
+- ✅ **Input validation** and sanitization with class-validator
+- ✅ **Swagger API documentation** for all services
+- ✅ **Docker & Docker Compose** for containerized deployment
 - ✅ **Dependency Inversion** for easy provider switching
+
+### Advanced Features
+- ✅ **Distributed Tracing** with OpenTelemetry, Tempo, and Jaeger
+- ✅ **Observability Stack** with Grafana for visualization
+- ✅ **Correlation ID Tracking** across all microservices
+- ✅ **Seat Locking Service** for handling concurrent bookings
+- ✅ **Global Exception Handling** with standardized error responses
+- ✅ **Response Wrapping Interceptors** for consistent API responses
+- ✅ **Metrics Collection** with custom interceptors
+- ✅ **Health Check Indicators** for RabbitMQ, Redis, and databases
+- ✅ **Idempotency Support** for critical booking operations
+- ✅ **Structured Logging** with Winston and correlation IDs
+- ✅ **Custom Decorators** for cleaner code (@User, @Roles, etc.)
+- ✅ **Middleware Chain** for request processing
+- ✅ **TypeORM Migrations** with idempotent patterns
+
+### Shared Libraries (@app/*)
+- **@app/common** - Shared utilities, decorators, filters, guards, interceptors
+- **@app/database** - TypeORM configuration and data sources per service
+- **@app/message-broker** - RabbitMQ abstraction layer
+- **@app/storage** - S3/LocalStack storage abstraction
+- **@app/rate-limiter** - Custom rate limiting implementation
+- **@app/seat-lock** - Distributed seat locking for concurrent bookings
+- **@app/telemetry** - OpenTelemetry integration and tracing
 
 ### Services
 
@@ -155,11 +178,35 @@ A production-grade, scalable microservices architecture for flight booking built
 - Booking confirmation emails
 - Cancellation notifications
 
+## 📊 Infrastructure Services
+
+### Core Infrastructure
+- **PostgreSQL** (Port 5432) - Separate databases: `auth_db`, `flight_db`, `booking_db`
+- **Redis** (Port 6379) - Caching, sessions, rate limiting, seat locks
+- **RabbitMQ** (Ports 5672, 15672) - Message broker for async communication
+- **LocalStack** (Port 4566) - S3-compatible storage for development
+
+### Observability Stack
+- **Tempo** (Ports 3200, 4317, 4318) - Distributed tracing backend
+- **Jaeger** (Ports 16686, 14268, 14250) - Alternative tracing UI
+- **Grafana** (Port 3005) - Visualization and monitoring dashboards
+
+### Access URLs
+```
+API Gateway:        http://localhost:3000
+Swagger Docs:       http://localhost:3000/api/docs
+RabbitMQ UI:        http://localhost:15672 (admin/admin)
+Jaeger UI:          http://localhost:16686
+Grafana:            http://localhost:3005
+Tempo:              http://localhost:3200
+```
+
 ## 📋 Prerequisites
 
 - Node.js >= 18.x
 - Docker & Docker Compose
 - npm or yarn
+- AWS CLI (for LocalStack S3 setup)
 
 ## 🛠️ Installation
 
@@ -400,36 +447,100 @@ npm run migration:revert:booking
 
 | Variable | Description | Default |
 |----------|-------------|---------|
+| **Application** |
 | NODE_ENV | Environment | development |
-| PORT | API Gateway port | 3000 |
-| DB_HOST | PostgreSQL host | localhost |
+| PORT | Service port | 3000-3004 |
+| **Database** |
+| DB_HOST | PostgreSQL host | postgres (Docker) / localhost |
 | DB_PORT | PostgreSQL port | 5432 |
-| REDIS_HOST | Redis host | localhost |
+| DB_USERNAME | Database user | postgres |
+| DB_PASSWORD | Database password | postgres |
+| DB_NAME | Database name | auth_db/flight_db/booking_db |
+| **Redis** |
+| REDIS_HOST | Redis host | redis (Docker) / localhost |
 | REDIS_PORT | Redis port | 6379 |
-| RABBITMQ_URL | RabbitMQ URL | amqp://admin:admin@localhost:5672 |
+| **RabbitMQ** |
+| RABBITMQ_URL | RabbitMQ URL | amqp://admin:admin@rabbitmq:5672 |
+| **JWT** |
 | JWT_ACCESS_SECRET | JWT access secret | (required) |
 | JWT_REFRESH_SECRET | JWT refresh secret | (required) |
+| JWT_ACCESS_EXPIRATION | Access token expiry | 15m |
+| JWT_REFRESH_EXPIRATION | Refresh token expiry | 7d |
+| **AWS S3** |
 | AWS_REGION | AWS region | us-east-1 |
+| AWS_ACCESS_KEY_ID | AWS access key | test (LocalStack) |
+| AWS_SECRET_ACCESS_KEY | AWS secret key | test (LocalStack) |
 | AWS_S3_BUCKET | S3 bucket name | flight-booking-bucket |
+| AWS_ENDPOINT | S3 endpoint | http://localstack:4566 |
+| **Observability** |
+| OTEL_EXPORTER_OTLP_ENDPOINT | OpenTelemetry endpoint | http://tempo:4318/v1/traces |
+| **Rate Limiting** |
+| THROTTLE_TTL | Rate limit window (seconds) | 60 |
+| THROTTLE_LIMIT | Max requests per window | 10 |
+| **CORS** |
+| CORS_ORIGIN | Allowed origins | http://localhost:3000 |
 
 ## 🏗️ Project Structure
 
 ```
 flight-booking/
 ├── apps/
-│   ├── api-gateway/          # HTTP Gateway
-│   ├── auth-service/         # Authentication
-│   ├── flight-service/       # Flight management
-│   ├── booking-service/      # Booking management
-│   └── notification-service/ # Notifications
+│   ├── api-gateway/              # HTTP Gateway (Port 3000)
+│   │   ├── src/
+│   │   │   ├── controllers/      # Route controllers
+│   │   │   ├── guards/           # JWT auth guards
+│   │   │   └── main.ts           # Bootstrap
+│   │   ├── Dockerfile
+│   │   └── .env
+│   ├── auth-service/             # Authentication (Port 3001)
+│   │   ├── src/
+│   │   │   ├── entities/         # User entity
+│   │   │   ├── services/         # Auth logic
+│   │   │   ├── strategies/       # Passport strategies
+│   │   │   └── migrations/       # Database migrations
+│   │   └── .env
+│   ├── flight-service/           # Flight management (Port 3002)
+│   │   ├── src/
+│   │   │   ├── entities/         # Flight, Airport, Seat entities
+│   │   │   ├── services/         # Flight CRUD, search
+│   │   │   └── migrations/       # Database migrations
+│   │   └── .env
+│   ├── booking-service/          # Booking management (Port 3003)
+│   │   ├── src/
+│   │   │   ├── entities/         # Booking, Payment entities
+│   │   │   ├── services/         # Booking logic, seat locking
+│   │   │   └── migrations/       # Database migrations
+│   │   └── .env
+│   └── notification-service/     # Notifications (Port 3004)
+│       ├── src/
+│       │   ├── services/         # Email, SMS services
+│       │   └── listeners/        # Event listeners
+│       └── .env
 ├── libs/
-│   ├── common/              # Shared interfaces & DTOs
-│   ├── database/            # Database configuration
-│   ├── message-broker/      # RabbitMQ abstraction
-│   └── storage/             # S3 abstraction
-├── docker-compose.yml       # Docker orchestration
-├── .env                     # Environment variables
-└── package.json            # Dependencies
+│   ├── common/                   # Shared utilities
+│   │   ├── decorators/           # @User, @Roles, @Public
+│   │   ├── dto/                  # Shared DTOs
+│   │   ├── enums/                # Common enums
+│   │   ├── filters/              # Global exception filter
+│   │   ├── guards/               # Auth, role guards
+│   │   ├── health/               # Health check indicators
+│   │   ├── interceptors/         # Logging, metrics, response wrapping
+│   │   ├── middleware/           # Correlation ID middleware
+│   │   └── services/             # Shared business logic
+│   ├── database/                 # TypeORM configuration
+│   │   └── data-sources/         # Per-service data sources
+│   ├── message-broker/           # RabbitMQ abstraction
+│   ├── storage/                  # S3/LocalStack abstraction
+│   ├── rate-limiter/             # Custom rate limiting
+│   ├── seat-lock/                # Distributed seat locking
+│   └── telemetry/                # OpenTelemetry integration
+├── docker-compose.yml            # Docker orchestration
+├── tempo.yaml                    # Tempo configuration
+├── init-db.sql                   # Database initialization
+├── .env                          # Environment variables
+├── nest-cli.json                 # NestJS CLI config
+├── tsconfig.json                 # TypeScript config
+└── package.json                  # Dependencies & scripts
 ```
 
 ## 🚦 Service Health Checks
@@ -440,12 +551,360 @@ Each service exposes health check endpoints:
 GET /health
 ```
 
-## 📈 Monitoring & Logging
+## 📊 Observability & Monitoring
 
-- Structured logging with Winston
-- Request/Response logging
-- Error tracking
-- Performance monitoring
+### Distributed Tracing
+
+The system uses **OpenTelemetry** for distributed tracing with **Tempo** as the backend and **Jaeger/Grafana** for visualization.
+
+**How it works:**
+1. Each request gets a unique **Correlation ID** via middleware
+2. OpenTelemetry automatically instruments HTTP requests, database queries, and RabbitMQ messages
+3. Traces are exported to Tempo via OTLP (OpenTelemetry Protocol)
+4. View traces in Jaeger UI at `http://localhost:16686`
+
+**Viewing Traces:**
+```bash
+# Access Jaeger UI
+open http://localhost:16686
+
+# Access Grafana (configure Tempo data source)
+open http://localhost:3005
+```
+
+### Correlation ID Tracking
+
+Every request is assigned a correlation ID that flows through:
+- HTTP requests (via `X-Correlation-ID` header)
+- RabbitMQ messages (via message properties)
+- Database queries (via logging context)
+- Error responses (included in error payload)
+
+**Example:**
+```bash
+curl -H "X-Correlation-ID: my-custom-id" http://localhost:3000/api/v1/flights
+```
+
+### Structured Logging
+
+- **Winston** for structured JSON logging
+- **Daily rotate files** for log management
+- **Correlation IDs** in every log entry
+- **Log levels:** error, warn, info, debug
+
+**Log format:**
+```json
+{
+  "timestamp": "2026-02-15T23:46:56.000Z",
+  "level": "info",
+  "correlationId": "abc-123-def",
+  "service": "booking-service",
+  "message": "Booking created successfully",
+  "context": { "bookingId": "uuid" }
+}
+```
+
+### Health Checks
+
+All services expose health check endpoints:
+
+```bash
+# API Gateway
+GET http://localhost:3000/health
+
+# Individual services
+GET http://localhost:3001/health  # Auth
+GET http://localhost:3002/health  # Flight
+GET http://localhost:3003/health  # Booking
+GET http://localhost:3004/health  # Notification
+```
+
+**Health indicators:**
+- Database connectivity
+- Redis connectivity
+- RabbitMQ connectivity
+- Memory usage
+- Disk space
+
+### Metrics Collection
+
+Custom metrics interceptor tracks:
+- Request duration
+- Response status codes
+- Error rates
+- RPC call latency
+
+## 🔒 Advanced Features Deep Dive
+
+### Seat Locking for Concurrent Bookings
+
+The `@app/seat-lock` library prevents double-booking using Redis distributed locks:
+
+**How it works:**
+1. User selects seats → System acquires Redis lock
+2. Lock held for 10 minutes (configurable)
+3. Booking completed → Lock released
+4. Lock expires → Seats become available again
+
+**Implementation:**
+```typescript
+// Automatically handled in booking service
+await this.seatLockService.lockSeats(flightId, seatNumbers);
+try {
+  await this.createBooking(...);
+} finally {
+  await this.seatLockService.unlockSeats(flightId, seatNumbers);
+}
+```
+
+### Idempotency Support
+
+Critical operations (bookings, payments) support idempotency keys:
+
+```bash
+POST /api/v1/bookings
+Headers:
+  X-Idempotency-Key: unique-key-123
+  
+# Duplicate request with same key returns original response
+```
+
+### Global Exception Handling
+
+Standardized error responses across all services:
+
+```json
+{
+  "statusCode": 400,
+  "message": "Validation failed",
+  "error": "Bad Request",
+  "correlationId": "abc-123-def",
+  "timestamp": "2026-02-15T23:46:56.000Z",
+  "path": "/api/v1/bookings",
+  "details": []
+}
+```
+
+## 🐛 Troubleshooting
+
+### Port Conflicts
+
+**Problem:** `Bind for 0.0.0.0:4317 failed: port is already allocated`
+
+**Solution:**
+```bash
+# Find process using the port
+lsof -i :4317
+
+# Kill the process
+kill -9 <PID>
+
+# Or change port in docker-compose.yml
+```
+
+### Migration Issues
+
+**Problem:** `QueryFailedError: relation already exists`
+
+**Solution:** All migrations are idempotent. Safe to re-run:
+```bash
+npm run migration:run:booking
+```
+
+### Database Connection Errors
+
+**Problem:** `ECONNREFUSED` when connecting to PostgreSQL
+
+**Solution:**
+```bash
+# From host machine, use localhost
+DB_HOST=localhost npm run migration:run:flight
+
+# From Docker, use service name
+DB_HOST=postgres npm run start:flight
+```
+
+### RabbitMQ Connection Issues
+
+**Problem:** Services can't connect to RabbitMQ
+
+**Solution:**
+```bash
+# Check RabbitMQ is running
+docker-compose ps rabbitmq
+
+# View RabbitMQ logs
+docker-compose logs rabbitmq
+
+# Restart RabbitMQ
+docker-compose restart rabbitmq
+```
+
+### Seat Locking Issues
+
+**Problem:** Seats remain locked after failed booking
+
+**Solution:** Locks auto-expire after 10 minutes, or manually clear:
+```bash
+# Connect to Redis
+docker exec -it flight-booking-redis redis-cli
+
+# List all locks
+KEYS seat:lock:*
+
+# Delete specific lock
+DEL seat:lock:flight-123:A1
+```
+
+### Viewing Logs with Correlation IDs
+
+```bash
+# Follow logs for a specific service
+docker-compose logs -f booking-service
+
+# Search logs by correlation ID
+docker-compose logs | grep "abc-123-def"
+```
+
+## 💻 Development Workflow
+
+### Local Development (Without Docker)
+
+1. **Start infrastructure services:**
+```bash
+docker-compose up -d postgres redis rabbitmq localstack
+```
+
+2. **Setup LocalStack S3:**
+```bash
+npm run setup:localstack
+```
+
+3. **Run migrations:**
+```bash
+DB_HOST=localhost npm run migration:run:auth
+DB_HOST=localhost npm run migration:run:flight
+DB_HOST=localhost npm run migration:run:booking
+```
+
+4. **Start services:**
+```bash
+# All services
+npm run start:all
+
+# Or individually
+npm run start:api-gateway
+npm run start:auth
+npm run start:flight
+npm run start:booking
+npm run start:notification
+```
+
+### Docker Development
+
+```bash
+# Build and start all services
+docker-compose up --build
+
+# Start in detached mode
+docker-compose up -d
+
+# View logs
+docker-compose logs -f [service-name]
+
+# Restart a service
+docker-compose restart booking-service
+
+# Stop all services
+docker-compose down
+
+# Remove volumes (clean slate)
+docker-compose down -v
+```
+
+### Debugging with Distributed Tracing
+
+1. Make a request and note the correlation ID:
+```bash
+curl -v http://localhost:3000/api/v1/bookings
+# Response header: X-Correlation-ID: abc-123-def
+```
+
+2. Search for the trace in Jaeger:
+   - Open `http://localhost:16686`
+   - Select service: `api-gateway`
+   - Search by correlation ID or time range
+   - View full request flow across services
+
+### Testing Microservice Communication
+
+```bash
+# Test RabbitMQ message flow
+# 1. Create a booking via API Gateway
+curl -X POST http://localhost:3000/api/v1/bookings \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{...}'
+
+# 2. Check notification service logs
+docker-compose logs notification-service | grep "booking.created"
+
+# 3. Verify in RabbitMQ UI
+open http://localhost:15672
+```
+
+### Creating Migrations
+
+```bash
+# Generate migration from entity changes
+npm run migration:generate:booking -- apps/booking-service/src/migrations/AddPaymentStatus
+
+# Create empty migration
+npm run migration:create:booking -- apps/booking-service/src/migrations/CustomMigration
+
+# Run migrations
+npm run migration:run:booking
+
+# Revert last migration
+npm run migration:revert:booking
+```
+
+### Best Practices
+
+1. **Always use correlation IDs** when debugging cross-service issues
+2. **Check health endpoints** before debugging service issues
+3. **Use Jaeger UI** to visualize request flows
+4. **Monitor RabbitMQ queues** for message backlogs
+5. **Check Redis** for lock issues in concurrent scenarios
+6. **Run migrations** before starting services after entity changes
+7. **Use idempotency keys** for testing booking operations
+
+## 📈 Performance & Scalability
+
+### Caching Strategy
+
+- **Flight search results** cached in Redis (5 minutes TTL)
+- **User sessions** stored in Redis
+- **Rate limiting** counters in Redis
+- **Seat locks** managed via Redis distributed locks
+
+### Database Optimization
+
+- **Indexes** on frequently queried fields
+- **Connection pooling** for efficient resource usage
+- **Database-per-service** for independent scaling
+- **Read replicas** support (configurable)
+
+### Horizontal Scaling
+
+All services are stateless and can be scaled horizontally:
+
+```yaml
+# docker-compose.yml
+booking-service:
+  deploy:
+    replicas: 3
+```
 
 ## 🤝 Contributing
 
@@ -465,13 +924,20 @@ For support, email support@flightbooking.com or open an issue in the repository.
 
 ## 🎯 Roadmap
 
+### Short Term
 - [ ] Payment gateway integration (Stripe/PayPal)
-- [ ] Real-time seat selection
-- [ ] Flight tracking
-- [ ] Multi-currency support
 - [ ] Email templates with SendGrid
 - [ ] SMS integration with Twilio
 - [ ] Admin dashboard
-- [ ] Analytics and reporting
-- [ ] Kubernetes deployment
-- [ ] CI/CD pipeline
+- [ ] Enhanced seat selection UI
+
+### Medium Term
+- [ ] Flight tracking and status updates
+- [ ] Loyalty program integration
+- [ ] Analytics and reporting dashboard
+
+### Long Term
+- [ ] Kubernetes deployment with Helm charts
+- [ ] CI/CD pipeline (GitHub Actions)
+- [ ] Multi-region deployment
+- [ ] Real-time notifications via WebSockets
