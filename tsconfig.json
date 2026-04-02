@@ -36,11 +36,11 @@
       "@app/message-broker/*": [
         "libs/message-broker/src/*"
       ],
-      "@app/storage": [
-        "libs/storage/src"
+      "@app/rate-limiter": [
+        "libs/rate-limiter/src"
       ],
-      "@app/storage/*": [
-        "libs/storage/src/*"
+      "@app/rate-limiter/*": [
+        "libs/rate-limiter/src/*"
       ],
       "@app/seat-lock": [
         "libs/seat-lock/src"
@@ -48,11 +48,11 @@
       "@app/seat-lock/*": [
         "libs/seat-lock/src/*"
       ],
-      "@app/rate-limiter": [
-        "libs/rate-limiter/src"
+      "@app/storage": [
+        "libs/storage/src"
       ],
-      "@app/rate-limiter/*": [
-        "libs/rate-limiter/src/*"
+      "@app/storage/*": [
+        "libs/storage/src/*"
       ],
       "@app/telemetry": [
         "libs/telemetry/src"
