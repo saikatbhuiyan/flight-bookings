@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import Stripe from 'stripe';
 import {
     IPaymentGateway,
+    PaymentMethod,
     CreatePaymentIntentParams,
     PaymentIntent,
     PaymentResult,
@@ -10,6 +11,20 @@ import {
     WebhookEvent,
 } from './payment-gateway.interface';
 
+/**
+ * Stripe Payment Gateway Provider
+ *
+ * Handles the following payment methods through a single Stripe integration:
+ *  • CARD       — standard card element / Payment Element
+ *  • APPLE_PAY  — Stripe Payment Request Button (wallet)
+ *  • GOOGLE_PAY — Stripe Payment Request Button (wallet)
+ *
+ * Apple Pay and Google Pay are NOT separate gateway integrations.  Stripe
+ * surfaces them automatically through `automatic_payment_methods: { enabled: true }`.
+ * The client renders the correct wallet button based on the browser/device.
+ *
+ * Docs: https://stripe.com/docs/payments/payment-methods/integration-options
+ */
 @Injectable()
 export class StripeGatewayProvider implements IPaymentGateway {
     private readonly logger = new Logger(StripeGatewayProvider.name);
@@ -25,11 +40,16 @@ export class StripeGatewayProvider implements IPaymentGateway {
             apiVersion: '2026-01-28.clover',
         });
 
-        this.logger.log('Stripe payment gateway initialized');
+        this.logger.log('Stripe payment gateway initialized (handles CARD, APPLE_PAY, GOOGLE_PAY)');
     }
 
     getGatewayName(): string {
         return 'stripe';
+    }
+
+    getSupportedPaymentMethods(): PaymentMethod[] {
+        // Stripe handles all three through automatic_payment_methods
+        return [PaymentMethod.CARD, PaymentMethod.APPLE_PAY, PaymentMethod.GOOGLE_PAY];
     }
 
     async createPaymentIntent(
@@ -37,25 +57,27 @@ export class StripeGatewayProvider implements IPaymentGateway {
     ): Promise<PaymentIntent> {
         try {
             this.logger.log(
-                `Creating Stripe payment intent for booking ${params.bookingId}`,
+                `Creating Stripe PaymentIntent for booking ${params.bookingId} ` +
+                `via method: ${params.paymentMethod}`,
             );
 
-            const paymentIntent = await this.stripe.paymentIntents.create({
+            const intentParams: Stripe.PaymentIntentCreateParams = {
                 amount: params.amount,
                 currency: params.currency.toLowerCase(),
                 metadata: {
                     bookingId: params.bookingId.toString(),
                     userId: params.userId.toString(),
+                    paymentMethod: params.paymentMethod,
                     ...params.metadata,
                 },
-                automatic_payment_methods: {
-                    enabled: true,
-                },
-            });
+                // automatic_payment_methods lets Stripe enable card, Apple Pay,
+                // Google Pay and other methods in one go — no manual enumeration needed.
+                automatic_payment_methods: { enabled: true },
+            };
 
-            this.logger.log(
-                `Stripe payment intent created: ${paymentIntent.id}`,
-            );
+            const paymentIntent = await this.stripe.paymentIntents.create(intentParams);
+
+            this.logger.log(`Stripe PaymentIntent created: ${paymentIntent.id}`);
 
             return {
                 id: paymentIntent.id,
@@ -64,11 +86,12 @@ export class StripeGatewayProvider implements IPaymentGateway {
                 currency: paymentIntent.currency.toUpperCase(),
                 status: paymentIntent.status,
                 clientSecret: paymentIntent.client_secret,
-                metadata: paymentIntent.metadata,
+                paymentMethod: params.paymentMethod,
+                metadata: paymentIntent.metadata as any,
             };
         } catch (error) {
             this.logger.error(
-                `Failed to create Stripe payment intent: ${error.message}`,
+                `Failed to create Stripe PaymentIntent: ${error.message}`,
                 error.stack,
             );
             throw error;
@@ -82,40 +105,31 @@ export class StripeGatewayProvider implements IPaymentGateway {
             const paymentIntent =
                 await this.stripe.paymentIntents.retrieve(gatewayPaymentId);
 
-            // If payment intent requires confirmation, confirm it
             if (paymentIntent.status === 'requires_confirmation') {
                 await this.stripe.paymentIntents.confirm(gatewayPaymentId);
             }
 
-            // If payment intent requires capture, capture it
             if (paymentIntent.status === 'requires_capture') {
                 await this.stripe.paymentIntents.capture(gatewayPaymentId);
             }
 
-            const updatedIntent =
-                await this.stripe.paymentIntents.retrieve(gatewayPaymentId);
-
-            const success = updatedIntent.status === 'succeeded';
-
-            this.logger.log(
-                `Stripe payment ${gatewayPaymentId} ${success ? 'succeeded' : 'failed'}`,
-            );
+            const updated = await this.stripe.paymentIntents.retrieve(gatewayPaymentId);
+            const success = updated.status === 'succeeded';
 
             return {
                 success,
-                transactionId: updatedIntent.id,
-                amount: updatedIntent.amount,
-                currency: updatedIntent.currency.toUpperCase(),
-                status: updatedIntent.status,
-                errorMessage: !success ? updatedIntent.last_payment_error?.message : undefined,
-                rawResponse: updatedIntent,
+                transactionId: updated.id,
+                amount: updated.amount,
+                currency: updated.currency.toUpperCase(),
+                status: updated.status,
+                errorMessage: !success ? updated.last_payment_error?.message : undefined,
+                rawResponse: updated,
             };
         } catch (error) {
             this.logger.error(
                 `Failed to capture Stripe payment: ${error.message}`,
                 error.stack,
             );
-
             return {
                 success: false,
                 transactionId: gatewayPaymentId,
@@ -137,8 +151,6 @@ export class StripeGatewayProvider implements IPaymentGateway {
                 reason: params.reason as any,
             });
 
-            this.logger.log(`Stripe refund created: ${refund.id}`);
-
             return {
                 success: refund.status === 'succeeded',
                 refundId: refund.id,
@@ -146,11 +158,7 @@ export class StripeGatewayProvider implements IPaymentGateway {
                 status: refund.status,
             };
         } catch (error) {
-            this.logger.error(
-                `Failed to create Stripe refund: ${error.message}`,
-                error.stack,
-            );
-
+            this.logger.error(`Failed to create Stripe refund: ${error.message}`, error.stack);
             return {
                 success: false,
                 refundId: '',
@@ -183,10 +191,7 @@ export class StripeGatewayProvider implements IPaymentGateway {
                 data: event.data.object,
             };
         } catch (error) {
-            this.logger.error(
-                `Failed to verify Stripe webhook: ${error.message}`,
-                error.stack,
-            );
+            this.logger.error(`Failed to verify Stripe webhook: ${error.message}`, error.stack);
             throw error;
         }
     }

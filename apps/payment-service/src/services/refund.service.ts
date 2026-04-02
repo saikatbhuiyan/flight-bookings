@@ -50,8 +50,8 @@ export class RefundService {
                 );
             }
 
-            // Get the appropriate gateway
-            const gateway = this.gatewayFactory.create(transaction.gateway as any);
+            // Get the appropriate gateway by the processor name stored on the transaction
+            const gateway = this.gatewayFactory.getByName(transaction.gateway);
 
             // Process refund with gateway
             const result = await gateway.refundPayment({

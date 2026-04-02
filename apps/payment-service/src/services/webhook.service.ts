@@ -24,7 +24,7 @@ export class WebhookService {
 
         try {
             // Get Stripe gateway
-            const gateway = this.gatewayFactory.create('stripe');
+            const gateway = this.gatewayFactory.getByName('stripe');
 
             // Verify webhook signature
             const event = await gateway.verifyWebhook(payload, signature);
@@ -70,7 +70,7 @@ export class WebhookService {
 
         try {
             // Get PayPal gateway
-            const gateway = this.gatewayFactory.create('paypal');
+            const gateway = this.gatewayFactory.getByName('paypal');
 
             // Verify webhook signature
             const event = await gateway.verifyWebhook(payload, signature);

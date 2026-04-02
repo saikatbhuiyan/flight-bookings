@@ -32,6 +32,9 @@ import { WebhookController } from './controllers/webhook.controller';
 
 // Gateways
 import { PaymentGatewayFactory } from './gateways/gateway.factory';
+import { StripeGatewayProvider } from './gateways/stripe-gateway.provider';
+import { PayPalGatewayProvider } from './gateways/paypal-gateway.provider';
+import { CryptoGatewayProvider } from './gateways/crypto-gateway.provider';
 
 // Config
 import { rabbitmqConfig } from './config/rabbitmq.config';
@@ -75,7 +78,12 @@ import { rabbitmqConfig } from './config/rabbitmq.config';
     PaymentService,
     RefundService,
     WebhookService,
+    // Gateway registry — each provider must be listed so DI can inject them
+    // into PaymentGatewayFactory.
     PaymentGatewayFactory,
+    StripeGatewayProvider,
+    PayPalGatewayProvider,
+    // CryptoGatewayProvider,
   ],
 })
 export class PaymentServiceModule { }

@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
     IPaymentGateway,
+    PaymentMethod,
     CreatePaymentIntentParams,
     PaymentIntent,
     PaymentResult,
@@ -11,14 +12,18 @@ import {
 
 /**
  * PayPal Payment Gateway Provider
- * 
- * This is a stub implementation for PayPal integration.
- * To complete this implementation, you'll need to:
- * 1. Install PayPal SDK: npm install @paypal/checkout-server-sdk
- * 2. Configure PayPal credentials (Client ID, Secret)
- * 3. Implement the payment flow using PayPal Orders API
- * 
- * Documentation: https://developer.paypal.com/docs/api/orders/v2/
+ *
+ * Handles: PAYPAL checkout flow.
+ *
+ * Implementation guide
+ * ────────────────────
+ * 1. Install the PayPal SDK:
+ *      npm install @paypal/checkout-server-sdk
+ * 2. Configure credentials via env:
+ *      PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_MODE (sandbox | live)
+ * 3. Replace the TODO blocks below with the PayPal Orders v2 API.
+ *
+ * PayPal docs: https://developer.paypal.com/docs/api/orders/v2/
  */
 @Injectable()
 export class PayPalGatewayProvider implements IPaymentGateway {
@@ -30,69 +35,58 @@ export class PayPalGatewayProvider implements IPaymentGateway {
 
         if (!clientId || !clientSecret) {
             this.logger.warn(
-                'PayPal credentials not configured. PayPal gateway will not work.',
+                'PayPal credentials not configured (PAYPAL_CLIENT_ID / PAYPAL_CLIENT_SECRET). ' +
+                'PayPal gateway will throw on use.',
             );
         }
 
-        this.logger.log('PayPal payment gateway initialized (stub implementation)');
+        this.logger.log('PayPal payment gateway initialized (stub – see TODO comments)');
     }
 
     getGatewayName(): string {
         return 'paypal';
     }
 
-    async createPaymentIntent(
-        params: CreatePaymentIntentParams,
-    ): Promise<PaymentIntent> {
-        this.logger.log(
-            `Creating PayPal order for booking ${params.bookingId}`,
+    getSupportedPaymentMethods(): PaymentMethod[] {
+        return [PaymentMethod.PAYPAL];
+    }
+
+    async createPaymentIntent(params: CreatePaymentIntentParams): Promise<PaymentIntent> {
+        this.logger.log(`Creating PayPal order for booking ${params.bookingId}`);
+
+        // TODO: implement PayPal Orders API
+        // Flow:
+        //   1. POST /v2/checkout/orders → get orderId + approve link
+        //   2. Return clientSecret = approvalUrl (client redirects user there)
+        //   3. After approval, client calls capturePayment(orderId)
+
+        throw new Error(
+            'PayPal gateway is not yet implemented. ' +
+            'Install @paypal/checkout-server-sdk and fill in the TODO blocks.',
         );
-
-        // TODO: Implement PayPal Orders API
-        // Example flow:
-        // 1. Create PayPal order using Orders API
-        // 2. Return order ID and approval URL
-        // 3. Client redirects user to PayPal for approval
-        // 4. After approval, capture the order
-
-        throw new Error('PayPal gateway not yet implemented');
-
-        // Stub return (for reference):
-        // return {
-        //   id: 'paypal_order_id',
-        //   gatewayPaymentId: 'paypal_order_id',
-        //   amount: params.amount,
-        //   currency: params.currency,
-        //   status: 'created',
-        //   clientSecret: 'approval_url', // PayPal uses approval URL instead
-        //   metadata: params.metadata,
-        // };
     }
 
     async capturePayment(gatewayPaymentId: string): Promise<PaymentResult> {
         this.logger.log(`Capturing PayPal order: ${gatewayPaymentId}`);
 
-        // TODO: Implement PayPal order capture
-        // Use PayPal Orders API to capture the approved order
+        // TODO: POST /v2/checkout/orders/{orderId}/capture
 
-        throw new Error('PayPal gateway not yet implemented');
+        throw new Error('PayPal capturePayment not yet implemented');
     }
 
     async refundPayment(params: RefundParams): Promise<RefundResult> {
         this.logger.log(`Creating PayPal refund for ${params.transactionId}`);
 
-        // TODO: Implement PayPal refund
-        // Use PayPal Payments API to create a refund
+        // TODO: POST /v2/payments/captures/{captureId}/refund
 
-        throw new Error('PayPal gateway not yet implemented');
+        throw new Error('PayPal refundPayment not yet implemented');
     }
 
     async verifyWebhook(payload: any, signature: string): Promise<WebhookEvent> {
-        this.logger.log('Verifying PayPal webhook');
+        this.logger.log('Verifying PayPal webhook signature');
 
-        // TODO: Implement PayPal webhook verification
-        // Use PayPal SDK to verify webhook signature
+        // TODO: use PayPal SDK WebhooksApi.verifyWebhookSignature()
 
-        throw new Error('PayPal gateway not yet implemented');
+        throw new Error('PayPal verifyWebhook not yet implemented');
     }
 }

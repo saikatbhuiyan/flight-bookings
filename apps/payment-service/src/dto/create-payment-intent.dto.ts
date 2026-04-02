@@ -1,5 +1,6 @@
-import { IsInt, IsString, IsOptional, IsObject, Min } from 'class-validator';
+import { IsInt, IsString, IsOptional, IsObject, IsEnum, Min } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { PaymentMethod } from '../gateways/payment-gateway.interface';
 
 export class CreatePaymentIntentDto {
     @ApiProperty({
@@ -17,7 +18,7 @@ export class CreatePaymentIntentDto {
     userId: number;
 
     @ApiProperty({
-        description: 'Payment amount in cents',
+        description: 'Payment amount in cents (smallest currency unit)',
         example: 50000,
         minimum: 1,
     })
@@ -34,20 +35,32 @@ export class CreatePaymentIntentDto {
     @IsOptional()
     currency?: string = 'USD';
 
+    @ApiProperty({
+        description: 'Payment method chosen by the customer',
+        enum: PaymentMethod,
+        example: PaymentMethod.CARD,
+        default: PaymentMethod.CARD,
+    })
+    @IsEnum(PaymentMethod)
+    @IsOptional()
+    paymentMethod?: PaymentMethod = PaymentMethod.CARD;
+
     @ApiPropertyOptional({
-        description: 'Additional metadata',
+        description:
+            'Advanced: override the processor gateway directly. ' +
+            'Prefer paymentMethod for automatic routing.',
+        example: 'stripe',
+        enum: ['stripe', 'paypal', 'crypto'],
+    })
+    @IsString()
+    @IsOptional()
+    gatewayOverride?: string;
+
+    @ApiPropertyOptional({
+        description: 'Additional metadata (e.g. flight number, seat class)',
         example: { flightNumber: 'AA100', seatClass: 'ECONOMY' },
     })
     @IsObject()
     @IsOptional()
     metadata?: Record<string, any>;
-
-    @ApiPropertyOptional({
-        description: 'Payment gateway to use (stripe, paypal)',
-        example: 'stripe',
-        enum: ['stripe', 'paypal'],
-    })
-    @IsString()
-    @IsOptional()
-    gateway?: string;
 }

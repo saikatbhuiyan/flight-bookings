@@ -34,12 +34,16 @@ export class PaymentService {
      * Create a payment intent
      */
     async createPaymentIntent(dto: CreatePaymentIntentDto): Promise<PaymentIntent> {
-        this.logger.log(`Creating payment intent for booking ${dto.bookingId}`);
+        this.logger.log(
+            `Creating payment intent for booking ${dto.bookingId} ` +
+            `[method: ${dto.paymentMethod ?? 'default'}]`,
+        );
 
         try {
-            // Get the appropriate gateway (either from DTO or default)
-            const gateway = this.gatewayFactory.create(dto.gateway as any);
-            this.logger.log(`Using gateway: ${gateway.getGatewayName()}`);
+            // Resolve the gateway: paymentMethod drives the processor automatically.
+            // gatewayOverride allows bypassing the routing map for advanced scenarios.
+            const gateway = this.gatewayFactory.resolve(dto.paymentMethod, dto.gatewayOverride);
+            this.logger.log(`Using processor: ${gateway.getGatewayName()}`);
 
             // Create payment intent with gateway
             const gatewayIntent = await gateway.createPaymentIntent({
@@ -47,6 +51,7 @@ export class PaymentService {
                 userId: dto.userId,
                 amount: dto.amount,
                 currency: dto.currency || 'USD',
+                paymentMethod: dto.paymentMethod,
                 metadata: dto.metadata,
             });
 
@@ -133,8 +138,8 @@ export class PaymentService {
                 throw new NotFoundException(`Payment intent ${gatewayPaymentId} not found`);
             }
 
-            // Get the appropriate gateway from stored gateway name
-            const gateway = this.gatewayFactory.create(intent.gateway as any);
+            // Re-resolve the gateway from the stored processor name
+            const gateway = this.gatewayFactory.getByName(intent.gateway);
 
             // Capture payment with gateway
             const result = await gateway.capturePayment(gatewayPaymentId);
