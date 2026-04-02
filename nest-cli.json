@@ -29,15 +29,6 @@
         "tsConfigPath": "apps/auth-service/tsconfig.app.json"
       }
     },
-    "flight-service": {
-      "type": "application",
-      "root": "apps/flight-service",
-      "entryFile": "main",
-      "sourceRoot": "apps/flight-service/src",
-      "compilerOptions": {
-        "tsConfigPath": "apps/flight-service/tsconfig.app.json"
-      }
-    },
     "booking-service": {
       "type": "application",
       "root": "apps/booking-service",
@@ -47,6 +38,15 @@
         "tsConfigPath": "apps/booking-service/tsconfig.app.json"
       }
     },
+    "flight-service": {
+      "type": "application",
+      "root": "apps/flight-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/flight-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/flight-service/tsconfig.app.json"
+      }
+    },
     "notification-service": {
       "type": "application",
       "root": "apps/notification-service",
@@ -54,6 +54,15 @@
       "sourceRoot": "apps/notification-service/src",
       "compilerOptions": {
         "tsConfigPath": "apps/notification-service/tsconfig.app.json"
+      }
+    },
+    "payment-service": {
+      "type": "application",
+      "root": "apps/payment-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/payment-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/payment-service/tsconfig.app.json"
       }
     },
     "rate-limiter": {

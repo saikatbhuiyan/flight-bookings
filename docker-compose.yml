@@ -106,7 +106,7 @@ services:
   grafana:
     image: grafana/grafana:latest
     ports:
-      - "3005:3000"
+      - "3006:3000"  # Changed from 3005 to avoid conflict with payment-service
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
@@ -114,6 +114,7 @@ services:
       - grafana-data:/var/lib/grafana
     networks:
       - flight-booking-network
+
 
   api-gateway:
     build:
@@ -248,7 +249,35 @@ services:
     networks:
       - flight-booking-network
 
+  payment-service:
+    build:
+      context: .
+      dockerfile: ./apps/payment-service/Dockerfile
+      target: development
+    container_name: flight-booking-payment-service
+    command: npm run start:payment
+    ports:
+      - '3005:3005'
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/dist
+    env_file:
+      - ./apps/payment-service/.env
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4318/v1/traces
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - flight-booking-network
+
 networks:
+
   flight-booking-network:
     driver: bridge
 
