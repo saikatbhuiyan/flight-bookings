@@ -1,9 +1,4 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
@@ -28,9 +23,7 @@ export class AccessTokenGuard implements CanActivate {
       const deviceId: string = this.extractDeviceId(request);
 
       if (!deviceId) {
-        throw new UnauthorizedException(
-          'Device ID missing for web authentication',
-        );
+        throw new UnauthorizedException('Device ID missing for web authentication');
       }
 
       token = request.cookies?.[`accessToken_${deviceId}`] as string;
@@ -67,17 +60,11 @@ export class AccessTokenGuard implements CanActivate {
       return req.headers['x-device-id'];
     }
 
-    if (
-      req.body &&
-      typeof (req.body as Record<string, unknown>).deviceId === 'string'
-    ) {
+    if (req.body && typeof (req.body as Record<string, unknown>).deviceId === 'string') {
       return (req.body as Record<string, string>).deviceId;
     }
 
-    if (
-      req.query &&
-      typeof (req.query as Record<string, unknown>).deviceId === 'string'
-    ) {
+    if (req.query && typeof (req.query as Record<string, unknown>).deviceId === 'string') {
       return (req.query as Record<string, string>).deviceId;
     }
 

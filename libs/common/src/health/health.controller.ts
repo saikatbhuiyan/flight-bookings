@@ -1,10 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
-import {
-  HealthCheckService,
-  TypeOrmHealthIndicator,
-  MemoryHealthIndicator,
-  HealthCheck,
-} from '@nestjs/terminus';
+import { HealthCheckService, TypeOrmHealthIndicator, MemoryHealthIndicator, HealthCheck } from '@nestjs/terminus';
 import { RabbitMQHealthIndicator } from './indicators/rabbitmq.health';
 import { RedisHealthIndicator } from './indicators/redis.health';
 import { ApiOperation, ApiTags, ApiResponse } from '@nestjs/swagger';

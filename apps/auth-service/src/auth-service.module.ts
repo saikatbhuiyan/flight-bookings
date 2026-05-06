@@ -38,10 +38,7 @@ import authConfig from '@app/common/config/auth.config';
       load: [authConfig],
       envFilePath: '.env',
     }),
-    DatabaseModule.forRoot(
-      [User, AuthAudit, NotificationSettings],
-      ['apps/auth-service/src/migrations/*.ts'],
-    ),
+    DatabaseModule.forRoot([User, AuthAudit, NotificationSettings], ['apps/auth-service/src/migrations/*.ts']),
     TypeOrmModule.forFeature([User, AuthAudit, NotificationSettings]),
     MessageBrokerModule.forRoot(),
     CommonModule,
@@ -83,4 +80,4 @@ import authConfig from '@app/common/config/auth.config';
   ],
   controllers: [AuthMessageController],
 })
-export class AuthServiceModule { }
+export class AuthServiceModule {}

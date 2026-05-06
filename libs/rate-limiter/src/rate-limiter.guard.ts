@@ -1,11 +1,4 @@
-import {
-  Injectable,
-  CanActivate,
-  ExecutionContext,
-  HttpException,
-  HttpStatus,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { RateLimiterService } from './rate-limiter.service';
 import { RateLimitConfig } from './interfaces/rate-limiter.interface';
@@ -23,10 +16,10 @@ export class RateLimiterGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // Check if rate limiting should be skipped
-    const skipRateLimit = this.reflector.getAllAndOverride<boolean>(
-      'skipRateLimit',
-      [context.getHandler(), context.getClass()],
-    );
+    const skipRateLimit = this.reflector.getAllAndOverride<boolean>('skipRateLimit', [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
     if (skipRateLimit) {
       this.logger.debug('Rate limiting skipped');
@@ -34,10 +27,10 @@ export class RateLimiterGuard implements CanActivate {
     }
 
     // Get rate limit config from method or class decorator (method takes precedence)
-    const config = this.reflector.getAllAndOverride<RateLimitConfig>(
-      RATE_LIMIT_KEY,
-      [context.getHandler(), context.getClass()],
-    );
+    const config = this.reflector.getAllAndOverride<RateLimitConfig>(RATE_LIMIT_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
     if (!config) {
       // No rate limit configured, allow request
@@ -48,7 +41,7 @@ export class RateLimiterGuard implements CanActivate {
     const response = context.switchToHttp().getResponse<Response>();
 
     // Generate rate limit key
-    const key = this.generateKey(request, config);
+    const key = this.generateKey(request);
 
     this.logger.debug(`Checking rate limit for key: ${key}`);
 
@@ -57,10 +50,7 @@ export class RateLimiterGuard implements CanActivate {
 
     // Set standard rate limit headers
     response.setHeader('X-RateLimit-Limit', result.info.limit.toString());
-    response.setHeader(
-      'X-RateLimit-Remaining',
-      result.info.remaining.toString(),
-    );
+    response.setHeader('X-RateLimit-Remaining', result.info.remaining.toString());
     response.setHeader('X-RateLimit-Reset', result.info.reset.toString());
 
     if (!result.allowed) {
@@ -90,7 +80,7 @@ export class RateLimiterGuard implements CanActivate {
    * Generate unique rate limit key based on request context
    * Priority: user ID > API key > IP address
    */
-  private generateKey(request: any, config: RateLimitConfig): string {
+  private generateKey(request: any): string {
     let identifier: string;
     let identifierType: string;
 

@@ -52,4 +52,4 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
   providers: [FlightService, FlightRepository],
   exports: [FlightService, FlightRepository],
 })
-export class FlightModule { }
+export class FlightModule {}

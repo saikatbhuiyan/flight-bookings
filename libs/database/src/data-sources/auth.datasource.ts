@@ -10,10 +10,7 @@ export default new DataSource({
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
   database: process.env.DB_NAME || 'auth_db',
-  entities: [
-    'libs/database/src/entities/*.entity.ts',
-    'apps/auth-service/src/entities/*.entity.ts',
-  ],
+  entities: ['libs/database/src/entities/*.entity.ts', 'apps/auth-service/src/entities/*.entity.ts'],
   migrations: ['apps/auth-service/src/migrations/*.ts'],
   synchronize: false,
 });

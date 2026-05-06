@@ -22,20 +22,12 @@ import {
   SharedCreateFlightDto,
   SharedSearchFlightDto,
 } from '@app/common';
-import {
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-  ApiParam,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('Flights')
 @Controller('flights')
 export class FlightController {
-  constructor(
-    @Inject('FLIGHT_SERVICE') private readonly flightClient: ClientProxy,
-  ) { }
+  constructor(@Inject('FLIGHT_SERVICE') private readonly flightClient: ClientProxy) {}
 
   @Public()
   @Get()
@@ -90,7 +82,7 @@ export class FlightController {
     try {
       return await firstValueFrom(this.flightClient.send<T>(pattern, data));
     } catch (error) {
-      const rpcError = error as any;
+      const rpcError = error;
       console.error(`[Gateway] Error calling ${pattern}:`, JSON.stringify(rpcError, null, 2));
 
       // Extract status: handle numeric and standard RMQ status formats

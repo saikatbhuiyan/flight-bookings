@@ -1,12 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsString,
-  IsNotEmpty,
-  IsInt,
-  Min,
-  IsEnum,
-  Length,
-} from 'class-validator';
+import { IsString, IsNotEmpty, IsInt, Min, IsEnum, Length } from 'class-validator';
 
 export enum SharedSeatType {
   ECONOMY = 'ECONOMY',

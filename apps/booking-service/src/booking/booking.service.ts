@@ -1,13 +1,6 @@
-import {
-  Injectable,
-  BadRequestException,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { SeatLockService } from '@app/seat-lock';
-import {
-  BookingSagaOrchestrator,
-  CreateBookingDto,
-} from '../booking-saga/saga-orchestrator.service';
+import { BookingSagaOrchestrator, CreateBookingDto } from '../booking-saga/saga-orchestrator.service';
 import { BookingRepository } from '../repositories/booking.repository';
 
 @Injectable()
@@ -16,7 +9,7 @@ export class BookingService {
     private readonly sagaOrchestrator: BookingSagaOrchestrator,
     private readonly bookingRepository: BookingRepository,
     private readonly seatLockService: SeatLockService,
-  ) { }
+  ) {}
 
   async createBooking(dto: CreateBookingDto, userId: number) {
     try {
@@ -37,11 +30,7 @@ export class BookingService {
     }
   }
 
-  async completeBooking(
-    bookingId: string,
-    userId: number,
-    paymentTransactionId: string,
-  ) {
+  async completeBooking(bookingId: string, userId: number, paymentTransactionId: string) {
     try {
       const booking = await this.bookingRepository.findByReference(bookingId);
       if (!booking) {
@@ -52,10 +41,7 @@ export class BookingService {
         throw new BadRequestException('Unauthorized');
       }
 
-      const completedBooking = await this.sagaOrchestrator.completeBooking(
-        bookingId,
-        paymentTransactionId,
-      );
+      const completedBooking = await this.sagaOrchestrator.completeBooking(bookingId, paymentTransactionId);
 
       return {
         bookingId: completedBooking.bookingReference,
@@ -106,16 +92,10 @@ export class BookingService {
         throw new BadRequestException('Unauthorized');
       }
 
-      const extended = await this.seatLockService.extendLock(
-        booking.flightId,
-        bookingId,
-        300,
-      ); // 5 more minutes
+      const extended = await this.seatLockService.extendLock(booking.flightId, bookingId, 300); // 5 more minutes
 
       if (!extended) {
-        throw new BadRequestException(
-          'Cannot extend booking - locks may have expired',
-        );
+        throw new BadRequestException('Cannot extend booking - locks may have expired');
       }
 
       // Update booking expiry in DB
@@ -135,7 +115,7 @@ export class BookingService {
 
   async getMyBookings(userId: number, status?: string) {
     const bookings = await this.bookingRepository.findByUserId(userId);
-    return bookings.filter((b) => !status || b.status === status);
+    return bookings.filter((b) => !status || (b.status as string) === status);
   }
 
   async getBooking(bookingId: string, userId: number) {
@@ -154,17 +134,12 @@ export class BookingService {
 
   async checkSeatAvailability(flightId: number, seats: string) {
     const seatArray = seats.split(',');
-    const lockedSeats = await this.seatLockService.areSeatsLocked(
-      flightId,
-      seatArray,
-    );
+    const lockedSeats = await this.seatLockService.areSeatsLocked(flightId, seatArray);
 
-    const availability = Array.from(lockedSeats.entries()).map(
-      ([seat, locked]) => ({
-        seat,
-        available: !locked,
-      }),
-    );
+    const availability = Array.from(lockedSeats.entries()).map(([seat, locked]) => ({
+      seat,
+      available: !locked,
+    }));
 
     return {
       flightId,

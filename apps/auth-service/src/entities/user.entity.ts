@@ -1,11 +1,5 @@
 import { Exclude } from 'class-transformer';
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  Unique,
-  OneToOne,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, Unique, OneToOne } from 'typeorm';
 import { NotificationSettings } from './notification-settings.entity';
 
 @Entity('users')

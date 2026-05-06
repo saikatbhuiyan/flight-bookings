@@ -29,9 +29,7 @@ import {
 @ApiTags('Airplanes')
 @Controller('airplanes')
 export class AirplaneController {
-  constructor(
-    @Inject('FLIGHT_SERVICE') private readonly flightClient: ClientProxy,
-  ) {}
+  constructor(@Inject('FLIGHT_SERVICE') private readonly flightClient: ClientProxy) {}
 
   @Post()
   @Roles(Role.ADMIN)
@@ -59,10 +57,7 @@ export class AirplaneController {
   @Roles(Role.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update airplane' })
-  async update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateAirplaneDto: UpdateAirplaneDto,
-  ) {
+  async update(@Param('id', ParseIntPipe) id: number, @Body() updateAirplaneDto: UpdateAirplaneDto) {
     return this.callService(MP.AIRPLANE_UPDATE, { id, updateAirplaneDto });
   }
 
@@ -80,10 +75,7 @@ export class AirplaneController {
       return await firstValueFrom(this.flightClient.send<T>(pattern, data));
     } catch (error) {
       const rpcError = error;
-      const status =
-        rpcError.statusCode ||
-        rpcError.status ||
-        HttpStatus.INTERNAL_SERVER_ERROR;
+      const status = rpcError.statusCode || rpcError.status || HttpStatus.INTERNAL_SERVER_ERROR;
       const message = rpcError.message || 'Internal server error';
       throw new HttpException(message, status);
     }

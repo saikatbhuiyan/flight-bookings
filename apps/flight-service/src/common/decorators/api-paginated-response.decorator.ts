@@ -6,9 +6,7 @@ import { PaginationMeta } from '../dto/pagination-response.dto';
  * Custom decorator for documenting paginated responses in Swagger
  * Generates proper OpenAPI schema for paginated endpoints
  */
-export const ApiPaginatedResponse = <TModel extends Type<any>>(
-  model: TModel,
-) => {
+export const ApiPaginatedResponse = <TModel extends Type<any>>(model: TModel) => {
   return applyDecorators(
     ApiOkResponse({
       description: 'Paginated response',

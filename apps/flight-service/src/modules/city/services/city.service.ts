@@ -1,10 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  ConflictException,
-  BadRequestException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { CityRepository } from '../repositories/city.repository';
 import { CreateCityDto } from '../dto/create-city.dto';
@@ -34,27 +28,15 @@ export class CityService {
     // Check if city already exists
     const existing = await this.cityRepository.findByName(createCityDto.name);
     if (existing) {
-      throw new ConflictException(
-        `City with name "${createCityDto.name}" already exists`,
-      );
+      throw new ConflictException(`City with name "${createCityDto.name}" already exists`);
     }
 
     // Validate coordinates if provided
-    if (
-      createCityDto.latitude !== undefined &&
-      createCityDto.longitude === undefined
-    ) {
-      throw new BadRequestException(
-        'Longitude is required when latitude is provided',
-      );
+    if (createCityDto.latitude !== undefined && createCityDto.longitude === undefined) {
+      throw new BadRequestException('Longitude is required when latitude is provided');
     }
-    if (
-      createCityDto.longitude !== undefined &&
-      createCityDto.latitude === undefined
-    ) {
-      throw new BadRequestException(
-        'Latitude is required when longitude is provided',
-      );
+    if (createCityDto.longitude !== undefined && createCityDto.latitude === undefined) {
+      throw new BadRequestException('Latitude is required when longitude is provided');
     }
 
     const city = await this.cityRepository.create(createCityDto);
@@ -66,19 +48,14 @@ export class CityService {
   /**
    * Get all cities with pagination and filters
    */
-  async findAll(
-    queryDto: QueryCityDto,
-  ): Promise<PaginatedResponseDto<CityResponseDto>> {
+  async findAll(queryDto: QueryCityDto): Promise<PaginatedResponseDto<CityResponseDto>> {
     this.logger.log('Fetching cities with filters');
 
     const { page = 1, limit = 10 } = queryDto;
     const skip = (page - 1) * limit;
     const take = limit;
 
-    const [cities, total] = await this.cityRepository.findWithPagination(
-      skip,
-      take,
-    );
+    const [cities, total] = await this.cityRepository.findWithPagination(skip, take);
 
     const cityDtos = cities.map((city) =>
       plainToInstance(CityResponseDto, city, {
@@ -86,30 +63,20 @@ export class CityService {
       }),
     );
 
-    return PaginatedResponseDto.create(
-      cityDtos,
-      queryDto.page,
-      queryDto.limit,
-      total,
-    );
+    return PaginatedResponseDto.create(cityDtos, queryDto.page, queryDto.limit, total);
   }
 
   /**
    * Get cities with airport count
    */
-  async findAllWithAirportCount(
-    queryDto: QueryCityDto,
-  ): Promise<PaginatedResponseDto<CityResponseDto>> {
+  async findAllWithAirportCount(queryDto: QueryCityDto): Promise<PaginatedResponseDto<CityResponseDto>> {
     this.logger.log('Fetching cities with airport count');
 
     const { page = 1, limit = 10 } = queryDto;
     const skip = (page - 1) * limit;
     const take = limit;
 
-    const [cities, total] = await this.cityRepository.findWithAirportCount(
-      skip,
-      take,
-    );
+    const [cities, total] = await this.cityRepository.findWithAirportCount(skip, take);
 
     const cityDtos = cities.map((city) =>
       plainToInstance(CityResponseDto, city, {
@@ -117,12 +84,7 @@ export class CityService {
       }),
     );
 
-    return PaginatedResponseDto.create(
-      cityDtos,
-      queryDto.page,
-      queryDto.limit,
-      total,
-    );
+    return PaginatedResponseDto.create(cityDtos, queryDto.page, queryDto.limit, total);
   }
 
   /**
@@ -151,10 +113,7 @@ export class CityService {
   /**
    * Update city
    */
-  async update(
-    id: number,
-    updateCityDto: UpdateCityDto,
-  ): Promise<CityResponseDto> {
+  async update(id: number, updateCityDto: UpdateCityDto): Promise<CityResponseDto> {
     this.logger.log(`Updating city with ID: ${id}`);
 
     // Check if city exists
@@ -165,34 +124,18 @@ export class CityService {
 
     // Check name uniqueness if name is being updated
     if (updateCityDto.name && updateCityDto.name !== existing.name) {
-      const duplicate = await this.cityRepository.findByName(
-        updateCityDto.name,
-      );
+      const duplicate = await this.cityRepository.findByName(updateCityDto.name);
       if (duplicate) {
-        throw new ConflictException(
-          `City with name "${updateCityDto.name}" already exists`,
-        );
+        throw new ConflictException(`City with name "${updateCityDto.name}" already exists`);
       }
     }
 
     // Validate coordinates if being updated
-    if (
-      updateCityDto.latitude !== undefined &&
-      updateCityDto.longitude === undefined &&
-      !existing.longitude
-    ) {
-      throw new BadRequestException(
-        'Longitude is required when latitude is provided',
-      );
+    if (updateCityDto.latitude !== undefined && updateCityDto.longitude === undefined && !existing.longitude) {
+      throw new BadRequestException('Longitude is required when latitude is provided');
     }
-    if (
-      updateCityDto.longitude !== undefined &&
-      updateCityDto.latitude === undefined &&
-      !existing.latitude
-    ) {
-      throw new BadRequestException(
-        'Latitude is required when longitude is provided',
-      );
+    if (updateCityDto.longitude !== undefined && updateCityDto.latitude === undefined && !existing.latitude) {
+      throw new BadRequestException('Latitude is required when longitude is provided');
     }
 
     const updated = await this.cityRepository.update(id, updateCityDto);
@@ -214,9 +157,7 @@ export class CityService {
 
     // Check if city has active airports
     if (city.airports && city.airports.some((airport) => airport.active)) {
-      throw new BadRequestException(
-        'Cannot delete city with active airports. Deactivate airports first.',
-      );
+      throw new BadRequestException('Cannot delete city with active airports. Deactivate airports first.');
     }
 
     const deleted = await this.cityRepository.delete(id);

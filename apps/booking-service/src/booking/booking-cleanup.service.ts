@@ -12,7 +12,7 @@ export class BookingCleanupService {
     private readonly bookingRepository: BookingRepository,
     private readonly seatLockService: SeatLockService,
     private readonly sagaOrchestrator: BookingSagaOrchestrator,
-  ) { }
+  ) {}
 
   /**
    * Clean up expired bookings every minute
@@ -20,16 +20,13 @@ export class BookingCleanupService {
   @Cron(CronExpression.EVERY_MINUTE)
   async cleanupExpiredBookings(): Promise<void> {
     try {
-      const expiredBookings =
-        await this.bookingRepository.findExpiredBookings();
+      const expiredBookings = await this.bookingRepository.findExpiredBookings();
 
       if (expiredBookings.length === 0) {
         return;
       }
 
-      this.logger.log(
-        `Found ${expiredBookings.length} expired bookings to clean up`,
-      );
+      this.logger.log(`Found ${expiredBookings.length} expired bookings to clean up`);
 
       for (const booking of expiredBookings) {
         try {
@@ -39,14 +36,9 @@ export class BookingCleanupService {
             'Booking expired - payment not completed within time limit',
           );
 
-          this.logger.log(
-            `Cancelled expired booking ${booking.bookingReference}`,
-          );
+          this.logger.log(`Cancelled expired booking ${booking.bookingReference}`);
         } catch (error) {
-          this.logger.error(
-            `Error cancelling expired booking ${booking.bookingReference}:`,
-            error,
-          );
+          this.logger.error(`Error cancelling expired booking ${booking.bookingReference}:`, error);
         }
       }
     } catch (error) {

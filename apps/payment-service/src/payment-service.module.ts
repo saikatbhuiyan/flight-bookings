@@ -34,7 +34,6 @@ import { WebhookController } from './controllers/webhook.controller';
 import { PaymentGatewayFactory } from './gateways/gateway.factory';
 import { StripeGatewayProvider } from './gateways/stripe-gateway.provider';
 import { PayPalGatewayProvider } from './gateways/paypal-gateway.provider';
-import { CryptoGatewayProvider } from './gateways/crypto-gateway.provider';
 
 // Config
 import { rabbitmqConfig } from './config/rabbitmq.config';
@@ -49,23 +48,14 @@ import { rabbitmqConfig } from './config/rabbitmq.config';
       [PaymentIntent, PaymentTransaction, Refund, PaymentAuditLog],
       [__dirname + '/migrations/*.{ts,js}'],
     ),
-    TypeOrmModule.forFeature([
-      PaymentIntent,
-      PaymentTransaction,
-      Refund,
-      PaymentAuditLog,
-    ]),
+    TypeOrmModule.forFeature([PaymentIntent, PaymentTransaction, Refund, PaymentAuditLog]),
     CommonModule,
     WinstonModule.forRoot(winstonLoggerConfig),
     HealthModule,
     EventEmitterModule.forRoot(),
     RabbitMQModule.forRoot(rabbitmqConfig),
   ],
-  controllers: [
-    PaymentIntentController,
-    RefundController,
-    WebhookController,
-  ],
+  controllers: [PaymentIntentController, RefundController, WebhookController],
   providers: [
     {
       provide: APP_INTERCEPTOR,
@@ -83,7 +73,6 @@ import { rabbitmqConfig } from './config/rabbitmq.config';
     PaymentGatewayFactory,
     StripeGatewayProvider,
     PayPalGatewayProvider,
-    // CryptoGatewayProvider,
   ],
 })
-export class PaymentServiceModule { }
+export class PaymentServiceModule {}

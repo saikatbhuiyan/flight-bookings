@@ -50,12 +50,7 @@ export class PaginatedResponseDto<T> {
   /**
    * Static factory method for creating paginated responses
    */
-  static create<T>(
-    data: T[],
-    page: number,
-    limit: number,
-    total: number,
-  ): PaginatedResponseDto<T> {
+  static create<T>(data: T[], page: number, limit: number, total: number): PaginatedResponseDto<T> {
     return new PaginatedResponseDto(data, page, limit, total);
   }
 }

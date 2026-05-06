@@ -7,8 +7,6 @@ import { QueryFailedError } from 'typeorm';
 
 describe('GlobalExceptionFilter', () => {
   let filter: GlobalExceptionFilter;
-  let configService: ConfigService;
-  let logger: any;
 
   const mockResponse = {
     status: jest.fn().mockReturnThis(),
@@ -50,8 +48,6 @@ describe('GlobalExceptionFilter', () => {
     }).compile();
 
     filter = module.get<GlobalExceptionFilter>(GlobalExceptionFilter);
-    configService = module.get<ConfigService>(ConfigService);
-    logger = module.get(WINSTON_MODULE_NEST_PROVIDER);
     jest.clearAllMocks();
   });
 
@@ -76,11 +72,7 @@ describe('GlobalExceptionFilter', () => {
   });
 
   it('should handle QueryFailedError and add errorCode', () => {
-    const exception = new QueryFailedError(
-      'query',
-      [],
-      new Error('driver error'),
-    );
+    const exception = new QueryFailedError('query', [], new Error('driver error'));
     (exception as any).code = '23505';
 
     filter.catch(exception, mockArgumentsHost);
@@ -101,9 +93,7 @@ describe('GlobalExceptionFilter', () => {
     filter.catch(exception, mockArgumentsHost);
 
     const jsonResponse = mockResponse.json.mock.calls[0][0];
-    expect(jsonResponse.message).toBe(
-      'An unexpected error occurred. Please try again later.',
-    );
+    expect(jsonResponse.message).toBe('An unexpected error occurred. Please try again later.');
     expect(jsonResponse.errors).toBeUndefined();
 
     process.env.NODE_ENV = 'test'; // Reset

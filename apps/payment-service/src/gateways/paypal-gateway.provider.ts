@@ -1,13 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
-    IPaymentGateway,
-    PaymentMethod,
-    CreatePaymentIntentParams,
-    PaymentIntent,
-    PaymentResult,
-    RefundParams,
-    RefundResult,
-    WebhookEvent,
+  IPaymentGateway,
+  PaymentMethod,
+  CreatePaymentIntentParams,
+  PaymentIntent,
+  PaymentResult,
+  RefundParams,
+  RefundResult,
+  WebhookEvent,
 } from './payment-gateway.interface';
 
 /**
@@ -27,66 +27,65 @@ import {
  */
 @Injectable()
 export class PayPalGatewayProvider implements IPaymentGateway {
-    private readonly logger = new Logger(PayPalGatewayProvider.name);
+  private readonly logger = new Logger(PayPalGatewayProvider.name);
 
-    constructor() {
-        const clientId = process.env.PAYPAL_CLIENT_ID;
-        const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
+  constructor() {
+    const clientId = process.env.PAYPAL_CLIENT_ID;
+    const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
 
-        if (!clientId || !clientSecret) {
-            this.logger.warn(
-                'PayPal credentials not configured (PAYPAL_CLIENT_ID / PAYPAL_CLIENT_SECRET). ' +
-                'PayPal gateway will throw on use.',
-            );
-        }
-
-        this.logger.log('PayPal payment gateway initialized (stub – see TODO comments)');
+    if (!clientId || !clientSecret) {
+      this.logger.warn(
+        'PayPal credentials not configured (PAYPAL_CLIENT_ID / PAYPAL_CLIENT_SECRET). ' +
+          'PayPal gateway will throw on use.',
+      );
     }
 
-    getGatewayName(): string {
-        return 'paypal';
-    }
+    this.logger.log('PayPal payment gateway initialized (stub – see TODO comments)');
+  }
 
-    getSupportedPaymentMethods(): PaymentMethod[] {
-        return [PaymentMethod.PAYPAL];
-    }
+  getGatewayName(): string {
+    return 'paypal';
+  }
 
-    async createPaymentIntent(params: CreatePaymentIntentParams): Promise<PaymentIntent> {
-        this.logger.log(`Creating PayPal order for booking ${params.bookingId}`);
+  getSupportedPaymentMethods(): PaymentMethod[] {
+    return [PaymentMethod.PAYPAL];
+  }
 
-        // TODO: implement PayPal Orders API
-        // Flow:
-        //   1. POST /v2/checkout/orders → get orderId + approve link
-        //   2. Return clientSecret = approvalUrl (client redirects user there)
-        //   3. After approval, client calls capturePayment(orderId)
+  createPaymentIntent(params: CreatePaymentIntentParams): Promise<PaymentIntent> {
+    this.logger.log(`Creating PayPal order for booking ${params.bookingId}`);
 
-        throw new Error(
-            'PayPal gateway is not yet implemented. ' +
-            'Install @paypal/checkout-server-sdk and fill in the TODO blocks.',
-        );
-    }
+    // TODO: implement PayPal Orders API
+    // Flow:
+    //   1. POST /v2/checkout/orders → get orderId + approve link
+    //   2. Return clientSecret = approvalUrl (client redirects user there)
+    //   3. After approval, client calls capturePayment(orderId)
 
-    async capturePayment(gatewayPaymentId: string): Promise<PaymentResult> {
-        this.logger.log(`Capturing PayPal order: ${gatewayPaymentId}`);
+    throw new Error(
+      'PayPal gateway is not yet implemented. ' + 'Install @paypal/checkout-server-sdk and fill in the TODO blocks.',
+    );
+  }
 
-        // TODO: POST /v2/checkout/orders/{orderId}/capture
+  capturePayment(gatewayPaymentId: string): Promise<PaymentResult> {
+    this.logger.log(`Capturing PayPal order: ${gatewayPaymentId}`);
 
-        throw new Error('PayPal capturePayment not yet implemented');
-    }
+    // TODO: POST /v2/checkout/orders/{orderId}/capture
 
-    async refundPayment(params: RefundParams): Promise<RefundResult> {
-        this.logger.log(`Creating PayPal refund for ${params.transactionId}`);
+    throw new Error('PayPal capturePayment not yet implemented');
+  }
 
-        // TODO: POST /v2/payments/captures/{captureId}/refund
+  refundPayment(params: RefundParams): Promise<RefundResult> {
+    this.logger.log(`Creating PayPal refund for ${params.transactionId}`);
 
-        throw new Error('PayPal refundPayment not yet implemented');
-    }
+    // TODO: POST /v2/payments/captures/{captureId}/refund
 
-    async verifyWebhook(payload: any, signature: string): Promise<WebhookEvent> {
-        this.logger.log('Verifying PayPal webhook signature');
+    throw new Error('PayPal refundPayment not yet implemented');
+  }
 
-        // TODO: use PayPal SDK WebhooksApi.verifyWebhookSignature()
+  verifyWebhook(): Promise<WebhookEvent> {
+    this.logger.log('Verifying PayPal webhook signature');
 
-        throw new Error('PayPal verifyWebhook not yet implemented');
-    }
+    // TODO: use PayPal SDK WebhooksApi.verifyWebhookSignature()
+
+    throw new Error('PayPal verifyWebhook not yet implemented');
+  }
 }

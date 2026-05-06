@@ -1,14 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsString,
-  IsNotEmpty,
-  MaxLength,
-  IsOptional,
-  IsNumber,
-  Min,
-  Max,
-  IsBoolean,
-} from 'class-validator';
+import { IsString, IsNotEmpty, MaxLength, IsOptional, IsNumber, Min, Max, IsBoolean } from 'class-validator';
 
 /**
  * Shared DTO for creating a new city

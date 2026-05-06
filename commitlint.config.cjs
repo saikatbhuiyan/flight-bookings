@@ -1,5 +1,5 @@
 /** @type {import('@commitlint/types').UserConfig} */
-export default {
+module.exports = {
   extends: ['@commitlint/config-conventional'],
 
   // Custom parser (optional but useful for strict control)

@@ -1,8 +1,4 @@
-import {
-  ConflictException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { HashingService } from '../hashing/hashing.service';
@@ -62,10 +58,7 @@ export class AuthenticationService {
     console.log('User found:', user);
     // Password validation
     if (user.password) {
-      const isValid = await this.hashingService.compare(
-        password,
-        user.password,
-      );
+      const isValid = await this.hashingService.compare(password, user.password);
       if (!isValid) {
         await this.auditService.logSignInAttempt(null, ip, deviceId, false);
         throw new UnauthorizedException('Invalid credentials');
@@ -107,12 +100,7 @@ export class AuthenticationService {
     await this.refreshTokenIdsStorage.insert(user.id, refreshTokenId, deviceId);
 
     // Audit log
-    await this.auditService.logTokenGeneration(
-      user.id,
-      deviceId,
-      refreshTokenId,
-      ip,
-    );
+    await this.auditService.logTokenGeneration(user.id, deviceId, refreshTokenId, ip);
 
     return { accessToken, refreshToken };
   }
@@ -138,9 +126,7 @@ export class AuthenticationService {
       const effectiveDeviceId = deviceId || payload.deviceId;
 
       // Check if token is blacklisted
-      if (
-        await this.refreshTokenBlacklist.isBlacklisted(payload.refreshTokenId)
-      ) {
+      if (await this.refreshTokenBlacklist.isBlacklisted(payload.refreshTokenId)) {
         throw new UnauthorizedException('Refresh token has been revoked');
       }
 
@@ -148,11 +134,7 @@ export class AuthenticationService {
       const user = await this.usersRepository.findOneByOrFail({
         id: payload.sub,
       });
-      const isValid = await this.refreshTokenIdsStorage.validate(
-        user.id,
-        payload.refreshTokenId,
-        effectiveDeviceId,
-      );
+      const isValid = await this.refreshTokenIdsStorage.validate(user.id, payload.refreshTokenId, effectiveDeviceId);
       if (!isValid) throw new InvalidateRefreshTokenError();
 
       // Invalidate old refresh token
@@ -174,10 +156,7 @@ export class AuthenticationService {
    */
   async signOut(signOutDto: SignOutDto) {
     const { userId, deviceId } = signOutDto;
-    const refreshTokenId = await this.refreshTokenIdsStorage.getToken(
-      userId,
-      deviceId,
-    );
+    const refreshTokenId = await this.refreshTokenIdsStorage.getToken(userId, deviceId);
     await this.refreshTokenIdsStorage.invalidate(userId, deviceId);
     // Optional: blacklist the current refresh token to prevent reuse
     await this.refreshTokenBlacklist.blacklistToken(refreshTokenId);

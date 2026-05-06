@@ -1,10 +1,4 @@
-import {
-  CallHandler,
-  ExecutionContext,
-  Injectable,
-  NestInterceptor,
-  Logger,
-} from '@nestjs/common';
+import { CallHandler, ExecutionContext, Injectable, NestInterceptor, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Observable } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
@@ -33,18 +27,11 @@ interface DataWithMeta {
 
 // Type guard for data with meta
 function hasMetaProperty<T>(data: T): data is T & DataWithMeta {
-  return (
-    typeof data === 'object' &&
-    data !== null &&
-    'meta' in data &&
-    typeof (data as DataWithMeta).meta === 'object'
-  );
+  return typeof data === 'object' && data !== null && 'meta' in data && typeof (data as DataWithMeta).meta === 'object';
 }
 
 @Injectable()
-export class WrapResponseInterceptor<T>
-  implements NestInterceptor<T, ApiResponse<T> | T>
-{
+export class WrapResponseInterceptor<T> implements NestInterceptor<T, ApiResponse<T> | T> {
   private readonly logger = new Logger(WrapResponseInterceptor.name);
 
   constructor(
@@ -52,18 +39,16 @@ export class WrapResponseInterceptor<T>
     private readonly reflector: Reflector,
   ) {}
 
-  intercept(
-    context: ExecutionContext,
-    next: CallHandler,
-  ): Observable<ApiResponse<T> | T> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<ApiResponse<T> | T> {
     const http = context.switchToHttp();
     const request = http.getRequest<Request & { correlationId?: string }>();
     const response = http.getResponse<Response>();
 
     // Check if the endpoint has NoWrapResponse decorator
-    const noWrapMetadata = this.reflector.getAllAndOverride<
-      boolean | NoWrapResponseOptions
-    >(NO_WRAP_RESPONSE, [context.getHandler(), context.getClass()]);
+    const noWrapMetadata = this.reflector.getAllAndOverride<boolean | NoWrapResponseOptions>(NO_WRAP_RESPONSE, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
     // Handle different decorator formats
     const shouldSkipWrap = this.shouldSkipWrapping(noWrapMetadata);
@@ -74,19 +59,13 @@ export class WrapResponseInterceptor<T>
     }
 
     // Get configuration values at runtime for flexibility
-    const enableWrap = this.configService.get<boolean>(
-      'appConfig.wrapResponse',
-      true,
-    );
+    const enableWrap = this.configService.get<boolean>('appConfig.wrapResponse', true);
 
     if (!enableWrap) {
       return next.handle() as Observable<T>;
     }
 
-    const apiVersion = this.configService.get<string>(
-      'appConfig.apiVersion',
-      '1.0',
-    );
+    const apiVersion = this.configService.get<string>('appConfig.apiVersion', '1.0');
 
     const correlationId = request.correlationId ?? this.generateCorrelationId();
     const statusCode = response.statusCode ?? 200;
@@ -99,12 +78,7 @@ export class WrapResponseInterceptor<T>
             return data;
           }
 
-          const wrappedResponse = this.wrapResponse(
-            data,
-            statusCode,
-            correlationId,
-            apiVersion,
-          );
+          const wrappedResponse = this.wrapResponse(data, statusCode, correlationId, apiVersion);
 
           return wrappedResponse;
         } catch (error) {
@@ -120,9 +94,7 @@ export class WrapResponseInterceptor<T>
     );
   }
 
-  private shouldSkipWrapping(
-    metadata: boolean | NoWrapResponseOptions | undefined,
-  ): boolean {
+  private shouldSkipWrapping(metadata: boolean | NoWrapResponseOptions | undefined): boolean {
     if (typeof metadata === 'boolean') {
       return metadata;
     }
@@ -134,10 +106,7 @@ export class WrapResponseInterceptor<T>
     return false;
   }
 
-  private logSkipReason(
-    metadata: boolean | NoWrapResponseOptions | undefined,
-    context: ExecutionContext,
-  ): void {
+  private logSkipReason(metadata: boolean | NoWrapResponseOptions | undefined, context: ExecutionContext): void {
     if (!context?.getHandler || !context?.getClass) {
       this.logger.debug('Skipping response wrapping - invalid context');
       return;
@@ -147,22 +116,13 @@ export class WrapResponseInterceptor<T>
     const controller = context.getClass()?.name ?? 'unknown';
 
     if (typeof metadata === 'object' && metadata?.reason) {
-      this.logger.debug(
-        `Skipping response wrapping for ${controller}.${handler}: ${metadata.reason}`,
-      );
+      this.logger.debug(`Skipping response wrapping for ${controller}.${handler}: ${metadata.reason}`);
     } else {
-      this.logger.debug(
-        `Skipping response wrapping for ${controller}.${handler}`,
-      );
+      this.logger.debug(`Skipping response wrapping for ${controller}.${handler}`);
     }
   }
 
-  private wrapResponse<T>(
-    data: T,
-    statusCode: number,
-    correlationId: string,
-    apiVersion: string,
-  ): ApiResponse<T> {
+  private wrapResponse<T>(data: T, statusCode: number, correlationId: string, apiVersion: string): ApiResponse<T> {
     let payload: T = data;
     let meta: Record<string, unknown> | undefined;
 

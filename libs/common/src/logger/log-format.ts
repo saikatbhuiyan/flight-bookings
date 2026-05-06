@@ -16,13 +16,9 @@ export const createLogFormat = (isDev: boolean) =>
 
         printf((info: TransformableInfo) => {
           const { timestamp, level, message, stack, ...meta } = info;
-          const metaStr =
-            Object.keys(meta).length > 0
-              ? ` | meta: ${JSON.stringify(meta)}`
-              : '';
+          const metaStr = Object.keys(meta).length > 0 ? ` | meta: ${JSON.stringify(meta)}` : '';
 
-          const stackStr =
-            stack && typeof stack === 'string' ? ` | stack: ${stack}` : '';
+          const stackStr = stack && typeof stack === 'string' ? ` | stack: ${stack}` : '';
 
           return `${String(timestamp)} ${level}: ${String(message)}${stackStr}${metaStr}`;
         }),

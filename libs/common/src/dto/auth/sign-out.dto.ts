@@ -1,10 +1,4 @@
-import {
-  IsEnum,
-  IsNumber,
-  IsOptional,
-  IsPositive,
-  IsString,
-} from 'class-validator';
+import { IsEnum, IsNumber, IsOptional, IsPositive, IsString } from 'class-validator';
 import { ClientType } from '@app/common';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 

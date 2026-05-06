@@ -65,15 +65,12 @@ export class AirportRepository implements IBaseRepository<Airport> {
     const skip = (page - 1) * limit;
     const take = limit;
 
-    const query = this.repository
-      .createQueryBuilder('airport')
-      .leftJoinAndSelect('airport.city', 'city');
+    const query = this.repository.createQueryBuilder('airport').leftJoinAndSelect('airport.city', 'city');
 
     if (search) {
-      query.andWhere(
-        '(airport.name ILIKE :search OR airport.code ILIKE :search OR city.name ILIKE :search)',
-        { search: `%${search}%` },
-      );
+      query.andWhere('(airport.name ILIKE :search OR airport.code ILIKE :search OR city.name ILIKE :search)', {
+        search: `%${search}%`,
+      });
     }
 
     if (code) {

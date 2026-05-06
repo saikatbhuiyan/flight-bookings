@@ -1,10 +1,4 @@
-import {
-  PrimaryGeneratedColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
-  DeleteDateColumn,
-  Column,
-} from 'typeorm';
+import { PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, Column } from 'typeorm';
 
 export abstract class AbstractEntity {
   @PrimaryGeneratedColumn('uuid')

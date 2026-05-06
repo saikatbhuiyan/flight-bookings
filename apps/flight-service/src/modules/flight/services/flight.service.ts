@@ -1,11 +1,6 @@
 import { DataSource } from 'typeorm';
 import { OnEvent } from '@nestjs/event-emitter';
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { FlightRepository } from '../repositories/flight.repository';
 import { AirplaneRepository } from '../../airplane/repositories/airplane.repository';
 import { AirportRepository } from '../../airport/repositories/airport.repository';
@@ -21,28 +16,20 @@ export class FlightService {
     private readonly airplaneRepository: AirplaneRepository,
     private readonly airportRepository: AirportRepository,
     private readonly dataSource: DataSource,
-  ) { }
+  ) {}
 
   async create(createDto: SharedCreateFlightDto): Promise<Flight> {
     const { airplaneId, departureAirportId, arrivalAirportId } = createDto;
 
     // Validate existence
     const airplane = await this.airplaneRepository.findById(airplaneId);
-    if (!airplane)
-      throw new NotFoundException(`Airplane ${airplaneId} not found`);
+    if (!airplane) throw new NotFoundException(`Airplane ${airplaneId} not found`);
 
-    const depAirport =
-      await this.airportRepository.findById(departureAirportId);
-    if (!depAirport)
-      throw new NotFoundException(
-        `Departure Airport ${departureAirportId} not found`,
-      );
+    const depAirport = await this.airportRepository.findById(departureAirportId);
+    if (!depAirport) throw new NotFoundException(`Departure Airport ${departureAirportId} not found`);
 
     const arrAirport = await this.airportRepository.findById(arrivalAirportId);
-    if (!arrAirport)
-      throw new NotFoundException(
-        `Arrival Airport ${arrivalAirportId} not found`,
-      );
+    if (!arrAirport) throw new NotFoundException(`Arrival Airport ${arrivalAirportId} not found`);
 
     return this.flightRepository.create({
       ...createDto,
@@ -56,7 +43,10 @@ export class FlightService {
     console.log('FlightService.search result count:', flights.length);
     if (flights.length > 0) {
       console.log('First flight keys:', Object.keys(flights[0]));
-      console.log('First flight airplane keys:', flights[0].airplane ? Object.keys(flights[0].airplane) : 'No airplane');
+      console.log(
+        'First flight airplane keys:',
+        flights[0].airplane ? Object.keys(flights[0].airplane) : 'No airplane',
+      );
     }
     return flights;
   }
@@ -107,9 +97,7 @@ export class FlightService {
       // Decrement available seats
       await manager.decrement(Flight, { id: flightId }, seatField, seatCount);
 
-      this.logger.log(
-        `Reserved ${seatCount} ${seatClass} seats for booking ${bookingId} on flight ${flightId}`,
-      );
+      this.logger.log(`Reserved ${seatCount} ${seatClass} seats for booking ${bookingId} on flight ${flightId}`);
     });
   }
 
@@ -118,19 +106,12 @@ export class FlightService {
    * No changes needed as seats were already reserved
    */
   @OnEvent('flight.confirm-seats')
-  confirmSeats(payload: {
-    flightId: number;
-    bookingId: string;
-    seatClass: string;
-    seatCount: number;
-  }): void {
+  confirmSeats(payload: { flightId: number; bookingId: string; seatClass: string; seatCount: number }): void {
     const { flightId, bookingId } = payload;
 
     // Seats already decremented during reserve step
     // This event just confirms the reservation is permanent
-    this.logger.log(
-      `Confirmed seat reservation for booking ${bookingId} on flight ${flightId}`,
-    );
+    this.logger.log(`Confirmed seat reservation for booking ${bookingId} on flight ${flightId}`);
   }
 
   /**
@@ -152,9 +133,7 @@ export class FlightService {
       // Increment available seats
       await manager.increment(Flight, { id: flightId }, seatField, seatCount);
 
-      this.logger.log(
-        `Released ${seatCount} ${seatClass} seats for booking ${bookingId} on flight ${flightId}`,
-      );
+      this.logger.log(`Released ${seatCount} ${seatClass} seats for booking ${bookingId} on flight ${flightId}`);
     });
   }
 

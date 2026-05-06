@@ -46,10 +46,7 @@ export interface IMessageBroker {
   connect(): Promise<void>;
   disconnect(): Promise<void>;
   publish(pattern: string, data: any): Promise<void>;
-  subscribe(
-    pattern: string,
-    handler: (data: any) => Promise<void>,
-  ): Promise<void>;
+  subscribe(pattern: string, handler: (data: any) => Promise<void>): Promise<void>;
   emit(pattern: string, data: any): void;
 }
 

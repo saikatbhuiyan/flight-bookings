@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NestInterceptor,
-  ExecutionContext,
-  CallHandler,
-} from '@nestjs/common';
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 import { Reflector } from '@nestjs/core';
@@ -28,10 +23,7 @@ export class MetricsInterceptor implements NestInterceptor {
   constructor(private reflector: Reflector) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    const operationName = this.reflector.get<string>(
-      METRICS_KEY,
-      context.getHandler(),
-    );
+    const operationName = this.reflector.get<string>(METRICS_KEY, context.getHandler());
 
     if (!operationName) return next.handle();
     const startTime = Date.now();
@@ -59,11 +51,9 @@ export class MetricsInterceptor implements NestInterceptor {
           typeof error === 'object' &&
           error !== null &&
           'constructor' in error &&
-          typeof (error as { constructor?: { name?: unknown } }).constructor
-            ?.name === 'string'
+          typeof (error as { constructor?: { name?: unknown } }).constructor?.name === 'string'
         ) {
-          errorName = (error as { constructor: { name: string } }).constructor
-            .name;
+          errorName = (error as { constructor: { name: string } }).constructor.name;
         }
         this.metrics.increment(`api.${operationName}.error`, {
           method: req.method,

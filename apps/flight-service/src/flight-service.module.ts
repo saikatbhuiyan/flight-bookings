@@ -53,10 +53,7 @@ import { FlightModule } from './modules/flight/flight.module';
         inject: [ConfigService],
       },
     ]),
-    DatabaseModule.forRoot(
-      [Flight, City, Airport, Airplane, Seat],
-      [__dirname + '/migrations/*.{ts,js}'],
-    ),
+    DatabaseModule.forRoot([Flight, City, Airport, Airplane, Seat], [__dirname + '/migrations/*.{ts,js}']),
     TypeOrmModule.forFeature([Flight, City, Airport, Airplane, Seat]),
     CommonModule,
     WinstonModule.forRoot(winstonLoggerConfig),
@@ -79,4 +76,4 @@ import { FlightModule } from './modules/flight/flight.module';
     },
   ],
 })
-export class FlightServiceModule { }
+export class FlightServiceModule {}

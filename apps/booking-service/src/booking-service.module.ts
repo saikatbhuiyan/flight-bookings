@@ -2,12 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DatabaseModule } from '@app/database';
-import {
-  HealthModule,
-  CommonModule,
-  GlobalExceptionFilter,
-  winstonLoggerConfig,
-} from '@app/common';
+import { HealthModule, CommonModule, GlobalExceptionFilter, winstonLoggerConfig } from '@app/common';
 import { WinstonModule } from 'nest-winston';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
@@ -30,10 +25,7 @@ import { EventEmitterModule, EventEmitter2 } from '@nestjs/event-emitter';
       isGlobal: true,
       envFilePath: '.env',
     }),
-    DatabaseModule.forRoot(
-      [Booking, SagaState, OutboxEvent],
-      [__dirname + '/migrations/*.{ts,js}'],
-    ),
+    DatabaseModule.forRoot([Booking, SagaState, OutboxEvent], [__dirname + '/migrations/*.{ts,js}']),
     TypeOrmModule.forFeature([Booking, SagaState, OutboxEvent]),
     CommonModule,
     WinstonModule.forRoot(winstonLoggerConfig),
@@ -59,4 +51,4 @@ import { EventEmitterModule, EventEmitter2 } from '@nestjs/event-emitter';
     EventEmitter2,
   ],
 })
-export class BookingServiceModule { }
+export class BookingServiceModule {}

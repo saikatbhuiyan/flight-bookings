@@ -23,9 +23,7 @@ export class S3StorageProvider implements IStorageProvider {
       region: this.configService.get<string>('AWS_REGION'),
       credentials: {
         accessKeyId: this.configService.get<string>('AWS_ACCESS_KEY_ID'),
-        secretAccessKey: this.configService.get<string>(
-          'AWS_SECRET_ACCESS_KEY',
-        ),
+        secretAccessKey: this.configService.get<string>('AWS_SECRET_ACCESS_KEY'),
       },
       endpoint: this.configService.get<string>('AWS_ENDPOINT'), // For LocalStack
       forcePathStyle: true, // Required for LocalStack

@@ -1,10 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  ConflictException,
-  BadRequestException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { AirportRepository } from '../repositories/airport.repository';
 import { CityRepository } from '../../city/repositories/city.repository';
@@ -26,38 +20,26 @@ export class AirportService {
     private readonly cityRepository: CityRepository,
   ) {}
 
-  async create(
-    createAirportDto: CreateAirportDto,
-  ): Promise<AirportResponseDto> {
+  async create(createAirportDto: CreateAirportDto): Promise<AirportResponseDto> {
     this.logger.log(`Creating new airport: ${createAirportDto.name}`);
 
     // Validate city exists
     const city = await this.cityRepository.findById(createAirportDto.cityId);
     if (!city) {
-      throw new NotFoundException(
-        `City with ID ${createAirportDto.cityId} not found`,
-      );
+      throw new NotFoundException(`City with ID ${createAirportDto.cityId} not found`);
     }
 
     // Check IATA code uniqueness
-    const existingByCode = await this.airportRepository.findByCode(
-      createAirportDto.code,
-    );
+    const existingByCode = await this.airportRepository.findByCode(createAirportDto.code);
     if (existingByCode) {
-      throw new ConflictException(
-        `Airport with code "${createAirportDto.code}" already exists`,
-      );
+      throw new ConflictException(`Airport with code "${createAirportDto.code}" already exists`);
     }
 
     // Check ICAO code uniqueness if provided
     if (createAirportDto.icaoCode) {
-      const existingByIcao = await this.airportRepository.findByIcaoCode(
-        createAirportDto.icaoCode,
-      );
+      const existingByIcao = await this.airportRepository.findByIcaoCode(createAirportDto.icaoCode);
       if (existingByIcao) {
-        throw new ConflictException(
-          `Airport with ICAO code "${createAirportDto.icaoCode}" already exists`,
-        );
+        throw new ConflictException(`Airport with ICAO code "${createAirportDto.icaoCode}" already exists`);
       }
     }
 
@@ -72,9 +54,7 @@ export class AirportService {
     });
   }
 
-  async findAll(
-    queryDto: QueryAirportDto,
-  ): Promise<PaginatedResponseDto<AirportResponseDto>> {
+  async findAll(queryDto: QueryAirportDto): Promise<PaginatedResponseDto<AirportResponseDto>> {
     this.logger.log('Fetching airports with filters');
 
     const [airports, total] = await this.airportRepository.search(queryDto);
@@ -85,12 +65,7 @@ export class AirportService {
       }),
     );
 
-    return PaginatedResponseDto.create(
-      airportDtos,
-      queryDto.page,
-      queryDto.limit,
-      total,
-    );
+    return PaginatedResponseDto.create(airportDtos, queryDto.page, queryDto.limit, total);
   }
 
   async findOne(id: number): Promise<AirportResponseDto> {
@@ -117,10 +92,7 @@ export class AirportService {
     });
   }
 
-  async update(
-    id: number,
-    updateAirportDto: UpdateAirportDto,
-  ): Promise<AirportResponseDto> {
+  async update(id: number, updateAirportDto: UpdateAirportDto): Promise<AirportResponseDto> {
     this.logger.log(`Updating airport with ID: ${id}`);
 
     const existing = await this.airportRepository.findById(id);
@@ -129,27 +101,18 @@ export class AirportService {
     }
 
     // Validate city if being updated
-    if (
-      updateAirportDto.cityId &&
-      updateAirportDto.cityId !== existing.cityId
-    ) {
+    if (updateAirportDto.cityId && updateAirportDto.cityId !== existing.cityId) {
       const city = await this.cityRepository.findById(updateAirportDto.cityId);
       if (!city) {
-        throw new NotFoundException(
-          `City with ID ${updateAirportDto.cityId} not found`,
-        );
+        throw new NotFoundException(`City with ID ${updateAirportDto.cityId} not found`);
       }
     }
 
     // Check code uniqueness if being updated
     if (updateAirportDto.code && updateAirportDto.code !== existing.code) {
-      const duplicate = await this.airportRepository.findByCode(
-        updateAirportDto.code,
-      );
+      const duplicate = await this.airportRepository.findByCode(updateAirportDto.code);
       if (duplicate) {
-        throw new ConflictException(
-          `Airport with code "${updateAirportDto.code}" already exists`,
-        );
+        throw new ConflictException(`Airport with code "${updateAirportDto.code}" already exists`);
       }
     }
 

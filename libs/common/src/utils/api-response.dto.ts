@@ -44,12 +44,7 @@ export class ApiResponseDto<T> {
     });
   }
 
-  static paginated<T>(
-    data: T[],
-    page: number,
-    limit: number,
-    total: number,
-  ): ApiResponseDto<T[]> {
+  static paginated<T>(data: T[], page: number, limit: number, total: number): ApiResponseDto<T[]> {
     return new ApiResponseDto<T[]>({
       success: true,
       data,

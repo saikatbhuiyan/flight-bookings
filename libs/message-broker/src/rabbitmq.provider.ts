@@ -76,10 +76,7 @@ export class RabbitMQProvider implements IMessageBroker, OnModuleDestroy {
     }
   }
 
-  async subscribe(
-    pattern: string,
-    handler: (data: any) => Promise<void>,
-  ): Promise<void> {
+  async subscribe(pattern: string, handler: (data: any) => Promise<void>): Promise<void> {
     const queueName = `queue_${pattern.replace(/\./g, '_')}`;
 
     await this.channelWrapper.addSetup(async (channel: any) => {
@@ -103,10 +100,7 @@ export class RabbitMQProvider implements IMessageBroker, OnModuleDestroy {
               channel.ack(msg);
               this.logger.debug(`Processed message from ${pattern}`);
             } catch (error) {
-              this.logger.error(
-                `Error processing message from ${pattern}`,
-                error,
-              );
+              this.logger.error(`Error processing message from ${pattern}`, error);
               // Reject and don't requeue - send to DLQ
               channel.nack(msg, false, false);
             }

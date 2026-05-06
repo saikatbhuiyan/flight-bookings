@@ -11,8 +11,7 @@ export class DatabaseModule {
       imports: [
         TypeOrmModule.forRootAsync({
           imports: [ConfigModule],
-          useFactory: (configService: ConfigService) =>
-            getDatabaseConfig(configService, entities, migrations),
+          useFactory: (configService: ConfigService) => getDatabaseConfig(configService, entities, migrations),
           inject: [ConfigService],
         }),
       ],

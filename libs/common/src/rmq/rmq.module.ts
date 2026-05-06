@@ -7,12 +7,7 @@ import { connect } from 'amqplib';
 export class RmqSetup {
   private static readonly logger = new Logger('RmqSetup');
 
-  static async setupQueues(
-    configService: ConfigService,
-    serviceName: string,
-    retryDelayMs = 10000,
-    maxRetries = 3,
-  ) {
+  static async setupQueues(configService: ConfigService, serviceName: string, retryDelayMs = 10000, maxRetries = 3) {
     const rabbitmqUrl = configService.get<string>('RABBITMQ_URL');
 
     let connection;
@@ -60,9 +55,7 @@ export class RmqSetup {
       },
     });
 
-    this.logger.log(
-      `✅ RabbitMQ queues ready: ${mainQueue}, ${retryQueue}, ${deadQueue}`,
-    );
+    this.logger.log(`✅ RabbitMQ queues ready: ${mainQueue}, ${retryQueue}, ${deadQueue}`);
 
     await channel.close();
     await connection.close();

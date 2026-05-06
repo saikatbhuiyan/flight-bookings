@@ -1,7 +1,7 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { SeatRepository } from '../repositories/seat.repository';
 import { AirplaneRepository } from '../../airplane/repositories/airplane.repository';
-import { CreateSeatDto, BulkCreateSeatsDto, SharedSeatType } from '@app/common';
+import { CreateSeatDto, BulkCreateSeatsDto } from '@app/common';
 import { Seat, SeatType } from '../../../entities/seat.entity';
 
 @Injectable()
@@ -47,9 +47,7 @@ export class SeatService {
       }
     }
 
-    this.logger.log(
-      `Bulk creating ${seats.length} seats for airplane ${airplaneId}`,
-    );
+    this.logger.log(`Bulk creating ${seats.length} seats for airplane ${airplaneId}`);
     return this.seatRepository.bulkCreate(seats);
   }
 

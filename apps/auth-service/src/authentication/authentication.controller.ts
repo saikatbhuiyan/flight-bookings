@@ -1,18 +1,5 @@
-import {
-  Controller,
-  Logger,
-  Post,
-  HttpCode,
-  HttpStatus,
-  Req,
-  UseFilters,
-} from '@nestjs/common';
-import {
-  Ctx,
-  MessagePattern,
-  Payload,
-  RmqContext,
-} from '@nestjs/microservices';
+import { Controller, Logger, Post, HttpCode, HttpStatus, Req, UseFilters } from '@nestjs/common';
+import { Ctx, MessagePattern, Payload, RmqContext } from '@nestjs/microservices';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthenticationService } from './authentication.service';
 import {
@@ -34,7 +21,7 @@ import { Request } from 'express';
 export class AuthMessageController {
   private readonly logger = new Logger(AuthMessageController.name);
 
-  constructor(private readonly authService: AuthenticationService) { }
+  constructor(private readonly authService: AuthenticationService) {}
 
   @Public()
   @Post('register')
@@ -68,11 +55,7 @@ export class AuthMessageController {
     description: 'Login successful',
     type: ApiResponseDto,
   })
-  login(
-    @Payload() data: SignInDto,
-    @Req() req?: Request,
-    @Ctx() context?: RmqContext,
-  ) {
+  login(@Payload() data: SignInDto, @Req() req?: Request, @Ctx() context?: RmqContext) {
     if (context && typeof context.getChannelRef === 'function') {
       return RmqHelper.handleAck(context, async () => {
         this.logger.debug(`RMQ: Logging in ${data.email}`);

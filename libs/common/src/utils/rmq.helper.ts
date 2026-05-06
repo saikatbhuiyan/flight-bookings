@@ -4,11 +4,7 @@ import { Logger, HttpException } from '@nestjs/common';
 const logger = new Logger('RmqHelper');
 
 export class RmqHelper {
-  static handleAck(
-    context: RmqContext,
-    callback: () => Promise<any>,
-    maxRetries = 3,
-  ) {
+  static handleAck(context: RmqContext, callback: () => Promise<any>, maxRetries = 3) {
     if (!context || typeof context.getChannelRef !== 'function') {
       return callback();
     }
@@ -26,28 +22,19 @@ export class RmqHelper {
       })
       .catch((error) => {
         console.log('error', error);
-        const isClientError =
-          error instanceof HttpException &&
-          error.getStatus() >= 400 &&
-          error.getStatus() < 500;
+        const isClientError = error instanceof HttpException && error.getStatus() >= 400 && error.getStatus() < 500;
 
         if (isClientError) {
-          logger.debug(
-            `Ack-ing client error: ${error.message} (${error.getStatus()})`,
-          );
+          logger.debug(`Ack-ing client error: ${error.message} (${error.getStatus()})`);
           channel.ack(originalMsg);
           throw error;
         }
 
         if (retryCount >= maxRetries) {
-          logger.error(
-            `❌ Message failed after ${maxRetries} retries. Moving to DLQ.`,
-          );
+          logger.error(`❌ Message failed after ${maxRetries} retries. Moving to DLQ.`);
           channel.ack(originalMsg); // remove from main queue
         } else {
-          logger.warn(
-            `⚠️ Message failed (retry #${retryCount + 1}). Sending to retry queue.`,
-          );
+          logger.warn(`⚠️ Message failed (retry #${retryCount + 1}). Sending to retry queue.`);
           channel.nack(originalMsg, false, false);
         }
         throw error;

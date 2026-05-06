@@ -1,14 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsString,
-  IsNotEmpty,
-  IsNumber,
-  IsDateString,
-  IsOptional,
-  IsInt,
-  Min,
-  IsEnum,
-} from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsDateString, IsOptional, IsInt, Min, IsEnum } from 'class-validator';
 import { FlightClass } from '../../enums/flight.enum';
 
 /**

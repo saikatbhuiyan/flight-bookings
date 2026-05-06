@@ -10,12 +10,7 @@ export class AuthAuditService {
     private readonly auditRepository: Repository<AuthAudit>,
   ) {}
 
-  async logSignInAttempt(
-    userId: number | null,
-    ip: string,
-    deviceId: string,
-    success: boolean,
-  ) {
+  async logSignInAttempt(userId: number | null, ip: string, deviceId: string, success: boolean) {
     await this.auditRepository.save({
       userId,
       ip,
@@ -26,12 +21,7 @@ export class AuthAuditService {
     });
   }
 
-  async logTokenGeneration(
-    userId: number,
-    deviceId: string,
-    refreshTokenId: string,
-    ip?: string,
-  ) {
+  async logTokenGeneration(userId: number, deviceId: string, refreshTokenId: string, ip?: string) {
     await this.auditRepository.save({
       userId,
       deviceId,

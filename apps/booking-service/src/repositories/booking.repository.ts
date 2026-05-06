@@ -21,11 +21,7 @@ export class BookingRepository {
     return this.repository.find({
       where: {
         userId,
-        status: In([
-          BookingStatus.INITIATED,
-          BookingStatus.PENDING,
-          BookingStatus.BOOKED,
-        ]),
+        status: In([BookingStatus.INITIATED, BookingStatus.PENDING, BookingStatus.BOOKED]),
       },
       order: { departureTime: 'ASC' },
     });
@@ -65,11 +61,7 @@ export class BookingRepository {
     return this.repository.findOne({ where: { id } });
   }
 
-  async updateWithVersion(
-    id: number,
-    version: number,
-    updateData: Partial<Booking>,
-  ): Promise<Booking | null> {
+  async updateWithVersion(id: number, version: number, updateData: Partial<Booking>): Promise<Booking | null> {
     const result = await this.repository
       .createQueryBuilder()
       .update(Booking)
@@ -82,10 +74,7 @@ export class BookingRepository {
   }
 
   // Get bookings with specific seat numbers
-  async findBySeats(
-    flightId: number,
-    seatNumbers: string[],
-  ): Promise<Booking[]> {
+  async findBySeats(flightId: number, seatNumbers: string[]): Promise<Booking[]> {
     return this.repository
       .createQueryBuilder('booking')
       .where('booking.flight_id = :flightId', { flightId })
@@ -97,10 +86,7 @@ export class BookingRepository {
   }
 
   // Check if seats are already booked
-  async areSeatsAvailable(
-    flightId: number,
-    seatNumbers: string[],
-  ): Promise<boolean> {
+  async areSeatsAvailable(flightId: number, seatNumbers: string[]): Promise<boolean> {
     const count = await this.repository
       .createQueryBuilder('booking')
       .where('booking.flight_id = :flightId', { flightId })

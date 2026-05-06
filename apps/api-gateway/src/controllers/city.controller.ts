@@ -15,22 +15,8 @@ import {
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiParam,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
-import {
-  MessagePattern as MP,
-  Public,
-  Roles,
-  Role,
-  CreateCityDto,
-  UpdateCityDto,
-  QueryCityDto,
-} from '@app/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
+import { MessagePattern as MP, Public, Roles, Role, CreateCityDto, UpdateCityDto, QueryCityDto } from '@app/common';
 
 /**
  * API Gateway controller for City operations
@@ -39,9 +25,7 @@ import {
 @ApiTags('Cities')
 @Controller('cities')
 export class CityController {
-  constructor(
-    @Inject('FLIGHT_SERVICE') private readonly flightClient: ClientProxy,
-  ) {}
+  constructor(@Inject('FLIGHT_SERVICE') private readonly flightClient: ClientProxy) {}
 
   @Post()
   @Roles(Role.ADMIN)
@@ -91,10 +75,7 @@ export class CityController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update city' })
   @ApiParam({ name: 'id', description: 'City ID' })
-  async update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateCityDto: UpdateCityDto,
-  ) {
+  async update(@Param('id', ParseIntPipe) id: number, @Body() updateCityDto: UpdateCityDto) {
     return this.callService(MP.CITY_UPDATE, { id, updateCityDto });
   }
 
@@ -113,10 +94,7 @@ export class CityController {
       return await firstValueFrom(this.flightClient.send<T>(pattern, data));
     } catch (error) {
       const rpcError = error;
-      const status =
-        rpcError.statusCode ||
-        rpcError.status ||
-        HttpStatus.INTERNAL_SERVER_ERROR;
+      const status = rpcError.statusCode || rpcError.status || HttpStatus.INTERNAL_SERVER_ERROR;
       const message = rpcError.message || 'Internal server error';
       throw new HttpException(message, status);
     }

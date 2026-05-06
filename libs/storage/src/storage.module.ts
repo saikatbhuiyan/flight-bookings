@@ -39,9 +39,7 @@ export class StorageModule {
   }
 
   static forRootAsync(options: {
-    useFactory: (
-      ...args: any[]
-    ) => IStorageProvider | Promise<IStorageProvider>;
+    useFactory: (...args: any[]) => IStorageProvider | Promise<IStorageProvider>;
     inject?: any[];
   }): DynamicModule {
     return {

@@ -1,15 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsString,
-  IsNotEmpty,
-  MaxLength,
-  IsOptional,
-  IsNumber,
-  Min,
-  Max,
-  IsInt,
-  Length,
-} from 'class-validator';
+import { IsString, IsNotEmpty, MaxLength, IsOptional, IsNumber, Min, Max, IsInt, Length } from 'class-validator';
 
 /**
  * Shared DTO for creating a new airport

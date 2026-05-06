@@ -23,10 +23,7 @@ export const winstonLoggerConfig = {
             format.timestamp(),
 
             format.printf(({ timestamp, level, message, ...meta }) => {
-              const metaString =
-                Object.keys(meta).length > 0
-                  ? ` | ${JSON.stringify(meta)}`
-                  : '';
+              const metaString = Object.keys(meta).length > 0 ? ` | ${JSON.stringify(meta)}` : '';
 
               return `[${String(timestamp)}] ${level}: ${String(message)}${metaString}`;
             }),

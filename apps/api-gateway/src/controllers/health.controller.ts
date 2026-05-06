@@ -1,14 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
-import {
-  HealthCheckService,
-  MemoryHealthIndicator,
-  HealthCheck,
-} from '@nestjs/terminus';
-import {
-  Public,
-  RabbitMQHealthIndicator,
-  RedisHealthIndicator,
-} from '@app/common';
+import { HealthCheckService, MemoryHealthIndicator, HealthCheck } from '@nestjs/terminus';
+import { Public, RabbitMQHealthIndicator, RedisHealthIndicator } from '@app/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Health')

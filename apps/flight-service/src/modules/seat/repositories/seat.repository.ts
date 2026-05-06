@@ -1,8 +1,7 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Seat } from '../../../entities/seat.entity';
-import { IBaseRepository } from '../../../common/interfaces/repository.interface';
 
 @Injectable()
 export class SeatRepository {

@@ -14,12 +14,7 @@ export class RefreshTokenBlacklist {
   }
 
   async blacklistToken(tokenId: string, ttlInSeconds?: number) {
-    await this.redis.set(
-      `blacklist:${tokenId}`,
-      '1',
-      'EX',
-      ttlInSeconds || this.blacklistTTL,
-    );
+    await this.redis.set(`blacklist:${tokenId}`, '1', 'EX', ttlInSeconds || this.blacklistTTL);
   }
 
   async isBlacklisted(tokenId: string): Promise<boolean> {

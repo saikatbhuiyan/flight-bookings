@@ -11,13 +11,7 @@ import {
   HttpStatus,
   HttpCode,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiParam,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { AirportService } from '../services/airport.service';
 import { CreateAirportDto } from '../dto/create-airport.dto';
@@ -40,9 +34,7 @@ export class AirportController {
     description: 'Airport created successfully',
     type: AirportResponseDto,
   })
-  async create(
-    @Body() createAirportDto: CreateAirportDto,
-  ): Promise<AirportResponseDto> {
+  async create(@Body() createAirportDto: CreateAirportDto): Promise<AirportResponseDto> {
     return this.airportService.create(createAirportDto);
   }
 
@@ -78,9 +70,7 @@ export class AirportController {
     description: 'Airport retrieved successfully',
     type: AirportResponseDto,
   })
-  async findOne(
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<AirportResponseDto> {
+  async findOne(@Param('id', ParseIntPipe) id: number): Promise<AirportResponseDto> {
     return this.airportService.findOne(id);
   }
 
@@ -131,9 +121,7 @@ export class AirportController {
   }
 
   @MessagePattern(MP.AIRPORT_UPDATE)
-  async handleUpdate(
-    @Payload() data: { id: number; updateAirportDto: UpdateAirportDto },
-  ) {
+  async handleUpdate(@Payload() data: { id: number; updateAirportDto: UpdateAirportDto }) {
     return this.airportService.update(data.id, data.updateAirportDto);
   }
 

@@ -11,13 +11,7 @@ import {
   HttpStatus,
   HttpCode,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiParam,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { CityService } from '../services/city.service';
 import { CreateCityDto } from '../dto/create-city.dto';
@@ -90,9 +84,7 @@ export class CityController {
     status: HttpStatus.NOT_FOUND,
     description: 'City not found',
   })
-  async findOne(
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<CityResponseDto> {
+  async findOne(@Param('id', ParseIntPipe) id: number): Promise<CityResponseDto> {
     return this.cityService.findOne(id);
   }
 
@@ -109,10 +101,7 @@ export class CityController {
     status: HttpStatus.NOT_FOUND,
     description: 'City not found',
   })
-  async update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateCityDto: UpdateCityDto,
-  ): Promise<CityResponseDto> {
+  async update(@Param('id', ParseIntPipe) id: number, @Body() updateCityDto: UpdateCityDto): Promise<CityResponseDto> {
     return this.cityService.update(id, updateCityDto);
   }
 
@@ -142,9 +131,7 @@ export class CityController {
     description: 'City restored successfully',
     type: CityResponseDto,
   })
-  async restore(
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<CityResponseDto> {
+  async restore(@Param('id', ParseIntPipe) id: number): Promise<CityResponseDto> {
     return this.cityService.restore(id);
   }
 
@@ -166,9 +153,7 @@ export class CityController {
   }
 
   @MessagePattern(MP.CITY_UPDATE)
-  async handleUpdate(
-    @Payload() data: { id: number; updateCityDto: UpdateCityDto },
-  ) {
+  async handleUpdate(@Payload() data: { id: number; updateCityDto: UpdateCityDto }) {
     return this.cityService.update(data.id, data.updateCityDto);
   }
 

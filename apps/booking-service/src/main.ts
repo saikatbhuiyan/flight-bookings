@@ -7,7 +7,6 @@ import { BookingServiceModule } from './booking-service.module';
 import { CommonRpcExceptionFilter, RmqSetup } from '@app/common';
 import { initializeTracing } from '@app/telemetry';
 
-
 async function bootstrap() {
   const logger = new Logger('BookingService');
   const app = await NestFactory.create(BookingServiceModule);

@@ -11,19 +11,10 @@ import {
   HttpStatus,
   HttpCode,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { AirplaneService } from '../services/airplane.service';
-import {
-  CreateAirplaneDto,
-  UpdateAirplaneDto,
-  QueryAirplaneDto,
-} from '@app/common';
+import { CreateAirplaneDto, UpdateAirplaneDto, QueryAirplaneDto } from '@app/common';
 import { AirplaneResponseDto } from '../dto/airplane-response.dto';
 import { ApiPaginatedResponse } from '../../../common/decorators/api-paginated-response.decorator';
 import { MessagePattern as MP } from '@app/common';
@@ -58,10 +49,7 @@ export class AirplaneController {
   @Patch(':id')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update airplane' })
-  async update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateAirplaneDto: UpdateAirplaneDto,
-  ) {
+  async update(@Param('id', ParseIntPipe) id: number, @Body() updateAirplaneDto: UpdateAirplaneDto) {
     return this.airplaneService.update(id, updateAirplaneDto);
   }
 
@@ -90,9 +78,7 @@ export class AirplaneController {
   }
 
   @MessagePattern(MP.AIRPLANE_UPDATE)
-  handleUpdate(
-    @Payload() data: { id: number; updateAirplaneDto: UpdateAirplaneDto },
-  ) {
+  handleUpdate(@Payload() data: { id: number; updateAirplaneDto: UpdateAirplaneDto }) {
     return this.airplaneService.update(data.id, data.updateAirplaneDto);
   }
 

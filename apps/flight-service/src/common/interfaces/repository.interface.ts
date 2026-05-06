@@ -19,11 +19,7 @@ export interface IBaseRepository<T, ID = number> {
   /**
    * Find entities with pagination
    */
-  findWithPagination(
-    skip: number,
-    take: number,
-    where?: FindOptionsWhere<T>,
-  ): Promise<[T[], number]>;
+  findWithPagination(skip: number, take: number, where?: FindOptionsWhere<T>): Promise<[T[], number]>;
 
   /**
    * Create new entity

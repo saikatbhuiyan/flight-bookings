@@ -24,18 +24,8 @@ import {
   JwtAuthGuard,
 } from '@app/common';
 import type { Request, Response } from 'express';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
-import {
-  SignUpDto as RegisterDto,
-  SignInDto,
-  RefreshTokenDto,
-  SignOutDto,
-} from '@app/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { SignUpDto as RegisterDto, SignInDto, RefreshTokenDto, SignOutDto } from '@app/common';
 import { RateLimit } from '@app/rate-limiter';
 
 interface AuthTokens {
@@ -50,7 +40,7 @@ export class AuthController {
   constructor(
     @Inject('AUTH_SERVICE') private readonly authClient: ClientProxy,
     private readonly cookieService: CookieService,
-  ) { }
+  ) {}
 
   // --- REGISTER ---------------------------------------------------
   @Public()
@@ -83,11 +73,7 @@ export class AuthController {
     status: HttpStatus.UNAUTHORIZED,
     description: 'Invalid credentials',
   })
-  async login(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-    @Body() loginDto: SignInDto,
-  ) {
+  async login(@Req() req: Request, @Res({ passthrough: true }) res: Response, @Body() loginDto: SignInDto) {
     const { clientType = ClientType.WEB, deviceId } = loginDto;
 
     const result = await this.callAuthService(MP.AUTH_LOGIN, {
@@ -128,9 +114,7 @@ export class AuthController {
     const { clientType = ClientType.WEB, deviceId } = refreshTokenDto;
 
     const refreshToken =
-      clientType === ClientType.WEB
-        ? req.cookies[`refreshToken_${deviceId}`]
-        : refreshTokenDto.refreshToken;
+      clientType === ClientType.WEB ? req.cookies[`refreshToken_${deviceId}`] : refreshTokenDto.refreshToken;
 
     if (!refreshToken) throw new BadRequestException('Missing refresh token');
 
@@ -159,10 +143,7 @@ export class AuthController {
     type: ApiResponseDto,
   })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
-  async logout(
-    @Res({ passthrough: true }) res: Response,
-    @Body() payload: SignOutDto,
-  ) {
+  async logout(@Res({ passthrough: true }) res: Response, @Body() payload: SignOutDto) {
     const { clientType = ClientType.WEB, deviceId } = payload;
     await this.callService(MP.AUTH_SIGNOUT, payload);
 
@@ -193,7 +174,7 @@ export class AuthController {
     try {
       return await firstValueFrom(this.authClient.send<T>(pattern, data));
     } catch (error) {
-      const rpcError = error as any;
+      const rpcError = error;
       console.error(`[Gateway] Error calling ${pattern}:`, JSON.stringify(rpcError, null, 2));
 
       // Extract status: handle numeric and standard RMQ status formats
@@ -231,10 +212,7 @@ export class AuthController {
     }
   }
 
-  private async callAuthService<T extends AuthTokens>(
-    pattern: string,
-    data: any,
-  ): Promise<T> {
+  private async callAuthService<T extends AuthTokens>(pattern: string, data: any): Promise<T> {
     return this.callService<T>(pattern, data);
   }
 }

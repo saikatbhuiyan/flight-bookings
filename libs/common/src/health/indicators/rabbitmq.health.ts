@@ -1,9 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  HealthIndicator,
-  HealthIndicatorResult,
-  HealthCheckError,
-} from '@nestjs/terminus';
+import { HealthIndicator, HealthIndicatorResult, HealthCheckError } from '@nestjs/terminus';
 import { ConfigService } from '@nestjs/config';
 import { connect } from 'amqplib';
 
@@ -25,10 +21,7 @@ export class RabbitMQHealthIndicator extends HealthIndicator {
       if (connection) {
         await connection.close();
       }
-      throw new HealthCheckError(
-        'RabbitMQ check failed',
-        this.getStatus(key, false, { message: error.message }),
-      );
+      throw new HealthCheckError('RabbitMQ check failed', this.getStatus(key, false, { message: error.message }));
     }
   }
 }

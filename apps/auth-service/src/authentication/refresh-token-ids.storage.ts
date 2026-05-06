@@ -10,9 +10,7 @@ export class RefreshTokenIdsStorage {
     private readonly redisService: RedisService,
     private readonly configService: ConfigService,
   ) {
-    this.refreshTokenTTL = this.configService.get<number>(
-      'jwt.refreshTokenTtl',
-    );
+    this.refreshTokenTTL = this.configService.get<number>('jwt.refreshTokenTtl');
   }
 
   private get redis() {
@@ -23,11 +21,7 @@ export class RefreshTokenIdsStorage {
     return client;
   }
 
-  async insert(
-    userId: number,
-    tokenId: string,
-    deviceId: string,
-  ): Promise<void> {
+  async insert(userId: number, tokenId: string, deviceId: string): Promise<void> {
     const key = `refresh-token:${userId}:${deviceId}`;
     await this.redis.set(key, tokenId, 'EX', this.refreshTokenTTL);
   }
@@ -37,15 +31,10 @@ export class RefreshTokenIdsStorage {
     return await this.redis.get(key);
   }
 
-  async validate(
-    userId: number,
-    tokenId: string,
-    deviceId: string,
-  ): Promise<boolean> {
+  async validate(userId: number, tokenId: string, deviceId: string): Promise<boolean> {
     const key = `refresh-token:${userId}:${deviceId}`;
     const storedToken = await this.redis.get(key);
-    if (!storedToken || storedToken !== tokenId)
-      throw new InvalidateRefreshTokenError();
+    if (!storedToken || storedToken !== tokenId) throw new InvalidateRefreshTokenError();
     return true;
   }
 

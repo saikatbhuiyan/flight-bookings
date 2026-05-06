@@ -1,6 +1,5 @@
 import {
   Controller,
-  Logger,
   Get,
   Post,
   Delete,
@@ -8,28 +7,17 @@ import {
   Param,
   Query,
   ParseIntPipe,
-  HttpCode,
   HttpStatus,
   UseFilters,
-  UseGuards,
 } from '@nestjs/common';
-import {
-  Ctx,
-  MessagePattern,
-  Payload,
-  RmqContext,
-} from '@nestjs/microservices';
+import { MessagePattern, Payload } from '@nestjs/microservices';
 import { ApiOperation, ApiResponse, ApiTags, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
 import { FlightService } from '../services/flight.service';
 import {
   MessagePattern as MP,
-  RmqHelper,
   SharedCreateFlightDto,
   SharedSearchFlightDto,
   CommonRpcExceptionFilter,
-  JwtAuthGuard,
-  Roles,
-  Role,
   Public,
 } from '@app/common';
 
@@ -37,7 +25,7 @@ import {
 @Controller('flights')
 @UseFilters(CommonRpcExceptionFilter)
 export class FlightController {
-  constructor(private readonly flightService: FlightService) { }
+  constructor(private readonly flightService: FlightService) {}
 
   @Post()
   @ApiBearerAuth()

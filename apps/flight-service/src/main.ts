@@ -23,23 +23,26 @@ async function bootstrap() {
   // Global prefix for HTTP routes
   app.setGlobalPrefix('api/v1');
 
-  app.connectMicroservice<MicroserviceOptions>({
-    transport: Transport.RMQ,
-    options: {
-      urls: [rabbitmqUrl],
-      queue,
-      queueOptions: {
-        durable: true,
-        arguments: {
-          'x-dead-letter-exchange': '',
-          'x-dead-letter-routing-key': `${queue}_retry`,
-          'x-max-length': 10000,
+  app.connectMicroservice<MicroserviceOptions>(
+    {
+      transport: Transport.RMQ,
+      options: {
+        urls: [rabbitmqUrl],
+        queue,
+        queueOptions: {
+          durable: true,
+          arguments: {
+            'x-dead-letter-exchange': '',
+            'x-dead-letter-routing-key': `${queue}_retry`,
+            'x-max-length': 10000,
+          },
         },
+        prefetchCount: 1,
+        noAck: true,
       },
-      prefetchCount: 1,
-      noAck: true,
     },
-  }, { inheritAppConfig: true });
+    { inheritAppConfig: true },
+  );
 
   app.useGlobalPipes(
     new ValidationPipe({

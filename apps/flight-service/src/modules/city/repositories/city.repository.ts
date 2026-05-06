@@ -43,11 +43,7 @@ export class CityRepository implements IBaseRepository<City> {
   /**
    * Find cities with pagination and filters
    */
-  async findWithPagination(
-    skip: number,
-    take: number,
-    where?: FindOptionsWhere<City>,
-  ): Promise<[City[], number]> {
+  async findWithPagination(skip: number, take: number, where?: FindOptionsWhere<City>): Promise<[City[], number]> {
     return this.repository.findAndCount({
       where,
       skip,
@@ -60,17 +56,7 @@ export class CityRepository implements IBaseRepository<City> {
    * Advanced search with multiple filters
    */
   async search(queryDto: QueryCityDto): Promise<[City[], number]> {
-    const {
-      search,
-      country,
-      countryCode,
-      timezone,
-      active,
-      sortBy,
-      sortOrder,
-      page = 1,
-      limit = 10,
-    } = queryDto;
+    const { search, country, countryCode, timezone, active, sortBy, sortOrder, page = 1, limit = 10 } = queryDto;
     const skip = (page - 1) * limit;
     const take = limit;
 
@@ -78,12 +64,9 @@ export class CityRepository implements IBaseRepository<City> {
 
     // Apply filters
     if (search) {
-      query.andWhere(
-        '(city.name ILIKE :search OR city.country ILIKE :search)',
-        {
-          search: `%${search}%`,
-        },
-      );
+      query.andWhere('(city.name ILIKE :search OR city.country ILIKE :search)', {
+        search: `%${search}%`,
+      });
     }
 
     if (country) {
@@ -178,11 +161,7 @@ export class CityRepository implements IBaseRepository<City> {
   /**
    * Get cities with airport count
    */
-  async findWithAirportCount(
-    skip: number,
-    take: number,
-    where?: FindOptionsWhere<City>,
-  ): Promise<[any[], number]> {
+  async findWithAirportCount(skip: number, take: number, where?: FindOptionsWhere<City>): Promise<[any[], number]> {
     const query = this.repository
       .createQueryBuilder('city')
       .leftJoin('city.airports', 'airport')

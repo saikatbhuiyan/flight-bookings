@@ -28,11 +28,7 @@ export class FlightRepository implements IBaseRepository<Flight, number> {
     });
   }
 
-  async findWithPagination(
-    skip: number,
-    take: number,
-    where?: FindOptionsWhere<Flight>,
-  ): Promise<[Flight[], number]> {
+  async findWithPagination(skip: number, take: number, where?: FindOptionsWhere<Flight>): Promise<[Flight[], number]> {
     return this.repository.findAndCount({
       where,
       relations: ['airplane', 'departureAirport', 'arrivalAirport'],

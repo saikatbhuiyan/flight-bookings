@@ -1,10 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-  RateLimitConfig,
-  RateLimitResult,
-  RateLimitInfo,
-} from './interfaces/rate-limiter.interface';
+import { RateLimitConfig, RateLimitResult, RateLimitInfo } from './interfaces/rate-limiter.interface';
 import { RedisService } from '@app/common';
 
 @Injectable()
@@ -20,14 +16,8 @@ export class RateLimiterService {
     this.defaultConfig = {
       points: this.configService.get<number>('RATE_LIMIT_POINTS', 100),
       duration: this.configService.get<number>('RATE_LIMIT_DURATION', 60),
-      blockDuration: this.configService.get<number>(
-        'RATE_LIMIT_BLOCK_DURATION',
-        120,
-      ),
-      keyPrefix: this.configService.get<string>(
-        'RATE_LIMIT_KEY_PREFIX',
-        'ratelimit',
-      ),
+      blockDuration: this.configService.get<number>('RATE_LIMIT_BLOCK_DURATION', 120),
+      keyPrefix: this.configService.get<string>('RATE_LIMIT_KEY_PREFIX', 'ratelimit'),
     };
   }
 
@@ -39,10 +29,7 @@ export class RateLimiterService {
    * @param config - Rate limit configuration
    * @returns Result indicating if request is allowed and rate limit info
    */
-  async consume(
-    key: string,
-    config?: RateLimitConfig,
-  ): Promise<RateLimitResult> {
+  async consume(key: string, config?: RateLimitConfig): Promise<RateLimitResult> {
     const finalConfig = { ...this.defaultConfig, ...config };
     const redis = this.redisService.getClient();
     const now = Date.now();
@@ -57,9 +44,7 @@ export class RateLimiterService {
         const blockedTimestamp = parseInt(blockedUntil, 10);
         if (now < blockedTimestamp) {
           const retryAfter = Math.ceil((blockedTimestamp - now) / 1000);
-          this.logger.debug(
-            `Request blocked for key: ${key}, retry after ${retryAfter}s`,
-          );
+          this.logger.debug(`Request blocked for key: ${key}, retry after ${retryAfter}s`);
 
           return {
             allowed: false,
@@ -115,18 +100,11 @@ export class RateLimiterService {
 
       // If rate limit exceeded, set block
       if (!allowed) {
-        const blockDuration =
-          (finalConfig.blockDuration || finalConfig.duration) * 1000;
+        const blockDuration = (finalConfig.blockDuration || finalConfig.duration) * 1000;
         const blockedUntil = now + blockDuration;
-        await redis.setex(
-          blockKey,
-          Math.ceil(blockDuration / 1000),
-          blockedUntil.toString(),
-        );
+        await redis.setex(blockKey, Math.ceil(blockDuration / 1000), blockedUntil.toString());
 
-        this.logger.warn(
-          `Rate limit exceeded for key: ${key}, blocked for ${Math.ceil(blockDuration / 1000)}s`,
-        );
+        this.logger.warn(`Rate limit exceeded for key: ${key}, blocked for ${Math.ceil(blockDuration / 1000)}s`);
 
         return {
           allowed: false,
@@ -139,9 +117,7 @@ export class RateLimiterService {
         };
       }
 
-      this.logger.debug(
-        `Rate limit check passed for key: ${key}, remaining: ${remaining}/${finalConfig.points}`,
-      );
+      this.logger.debug(`Rate limit check passed for key: ${key}, remaining: ${remaining}/${finalConfig.points}`);
 
       return {
         allowed: true,
@@ -172,10 +148,7 @@ export class RateLimiterService {
    * @param config - Rate limit configuration
    * @returns Current rate limit status
    */
-  async getStatus(
-    key: string,
-    config?: RateLimitConfig,
-  ): Promise<RateLimitInfo> {
+  async getStatus(key: string, config?: RateLimitConfig): Promise<RateLimitInfo> {
     const finalConfig = { ...this.defaultConfig, ...config };
     const redis = this.redisService.getClient();
     const now = Date.now();
@@ -196,10 +169,7 @@ export class RateLimiterService {
         reset: Math.floor((now + finalConfig.duration * 1000) / 1000),
       };
     } catch (error) {
-      this.logger.error(
-        `Error getting rate limit status for key: ${key}`,
-        error.stack,
-      );
+      this.logger.error(`Error getting rate limit status for key: ${key}`, error.stack);
       return {
         limit: finalConfig.points,
         remaining: finalConfig.points,
@@ -224,10 +194,7 @@ export class RateLimiterService {
       await Promise.all([redis.del(redisKey), redis.del(blockKey)]);
       this.logger.log(`Rate limit reset for key: ${key}`);
     } catch (error) {
-      this.logger.error(
-        `Error resetting rate limit for key: ${key}`,
-        error.stack,
-      );
+      this.logger.error(`Error resetting rate limit for key: ${key}`, error.stack);
     }
   }
 
@@ -238,17 +205,12 @@ export class RateLimiterService {
    * @param config - Rate limit configuration
    * @param durationSeconds - Block duration in seconds (optional)
    */
-  async block(
-    key: string,
-    config?: RateLimitConfig,
-    durationSeconds?: number,
-  ): Promise<void> {
+  async block(key: string, config?: RateLimitConfig, durationSeconds?: number): Promise<void> {
     const finalConfig = { ...this.defaultConfig, ...config };
     const redis = this.redisService.getClient();
     const redisKey = `${finalConfig.keyPrefix}:${key}`;
     const blockKey = `${redisKey}:blocked`;
-    const duration =
-      durationSeconds || finalConfig.blockDuration || finalConfig.duration;
+    const duration = durationSeconds || finalConfig.blockDuration || finalConfig.duration;
     const blockedUntil = Date.now() + duration * 1000;
 
     try {
@@ -291,10 +253,7 @@ export class RateLimiterService {
       const keys = await redis.keys(pattern);
       return keys;
     } catch (error) {
-      this.logger.error(
-        `Error getting all keys with pattern: ${pattern}`,
-        error.stack,
-      );
+      this.logger.error(`Error getting all keys with pattern: ${pattern}`, error.stack);
       return [];
     }
   }
@@ -313,10 +272,7 @@ export class RateLimiterService {
       this.logger.warn(`Deleted ${deleted} keys matching pattern: ${pattern}`);
       return deleted;
     } catch (error) {
-      this.logger.error(
-        `Error deleting keys with pattern: ${pattern}`,
-        error.stack,
-      );
+      this.logger.error(`Error deleting keys with pattern: ${pattern}`, error.stack);
       return 0;
     }
   }

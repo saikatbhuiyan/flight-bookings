@@ -15,21 +15,16 @@ export class SeatLockService {
 
   private readonly LOCK_TTL = 900; // 15 minutes
 
-  constructor(private readonly redisService: RedisService) { }
+  constructor(private readonly redisService: RedisService) {}
 
-  async lockSeats(
-    flightId: number,
-    seats: string[],
-    bookingId: string,
-    userId: number,
-  ): Promise<SeatLockResult> {
+  async lockSeats(flightId: number, seats: string[], bookingId: string, userId: number): Promise<SeatLockResult> {
     const redis = this.redisService.getClient();
     const timestamp = Date.now();
 
     // ------------------------------------------
     // 1. Seat validation (DB or cache hook)
     // ------------------------------------------
-    await this.validateSeatsExist(flightId, seats);
+    this.validateSeatsExist(flightId, seats);
 
     // ------------------------------------------
     // 2. Idempotency check
@@ -199,11 +194,7 @@ export class SeatLockService {
   // EXTEND LOCK (Fixed TTL Extension)
   // =============================================
 
-  async extendLock(
-    flightId: number,
-    bookingId: string,
-    additionalSeconds = 300,
-  ): Promise<boolean> {
+  async extendLock(flightId: number, bookingId: string, additionalSeconds = 300): Promise<boolean> {
     const redis = this.redisService.getClient();
     const bookingKey = this.getBookingKey(flightId, bookingId);
 
@@ -237,10 +228,7 @@ export class SeatLockService {
   // CHECK LOCK STATUS
   // =============================================
 
-  async areSeatsLocked(
-    flightId: number,
-    seats: string[],
-  ): Promise<Map<string, boolean>> {
+  async areSeatsLocked(flightId: number, seats: string[]): Promise<Map<string, boolean>> {
     const redis = this.redisService.getClient();
     const pipeline = redis.pipeline();
 
@@ -275,10 +263,7 @@ export class SeatLockService {
   // Seat validation hook
   // Replace with DB or seat service
   // ---------------------------------------------
-  private async validateSeatsExist(
-    flightId: number,
-    seats: string[],
-  ): Promise<void> {
+  private validateSeatsExist(flightId: number, seats: string[]): Promise<void> {
     // TODO: Replace with DB lookup or cache
     // Example:
     // const validSeats = await flightSeatRepo.find()

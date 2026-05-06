@@ -13,29 +13,15 @@ import {
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
-import {
-  MessagePattern as MP,
-  ApiResponseDto,
-  CreateBookingDto,
-  CurrentUser,
-  JwtAuthGuard,
-} from '@app/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-  ApiParam,
-} from '@nestjs/swagger';
+import { MessagePattern as MP, ApiResponseDto, CreateBookingDto, CurrentUser, JwtAuthGuard } from '@app/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags, ApiParam } from '@nestjs/swagger';
 
 @ApiTags('Bookings')
 @Controller('bookings')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class BookingController {
-  constructor(
-    @Inject('BOOKING_SERVICE') private readonly bookingClient: ClientProxy,
-  ) { }
+  constructor(@Inject('BOOKING_SERVICE') private readonly bookingClient: ClientProxy) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new flight booking' })
@@ -44,10 +30,7 @@ export class BookingController {
     description: 'Booking created successfully',
     type: ApiResponseDto,
   })
-  async createBooking(
-    @Body() createDto: CreateBookingDto,
-    @CurrentUser() user: any,
-  ) {
+  async createBooking(@Body() createDto: CreateBookingDto, @CurrentUser() user: any) {
     const result = await this.callService(MP.BOOKING_CREATE, {
       ...createDto,
       userId: user.id,
@@ -87,10 +70,7 @@ export class BookingController {
 
   @Put(':bookingId/extend')
   @ApiOperation({ summary: 'Extend booking expiry' })
-  async extendBooking(
-    @Param('bookingId') bookingId: string,
-    @CurrentUser() user: any,
-  ) {
+  async extendBooking(@Param('bookingId') bookingId: string, @CurrentUser() user: any) {
     const result = await this.callService(MP.BOOKING_EXTEND, {
       bookingId,
       userId: user.id,
@@ -110,10 +90,7 @@ export class BookingController {
   @Get(':bookingId')
   @ApiOperation({ summary: 'Get booking details' })
   @ApiParam({ name: 'bookingId', description: 'Booking ID' })
-  async getBooking(
-    @Param('bookingId') bookingId: string,
-    @CurrentUser() user: any,
-  ) {
+  async getBooking(@Param('bookingId') bookingId: string, @CurrentUser() user: any) {
     const result = await this.callService(MP.BOOKING_FIND_BY_ID, {
       bookingId,
       userId: user.id,
@@ -123,10 +100,7 @@ export class BookingController {
 
   @Get('flights/:flightId/seats/availability')
   @ApiOperation({ summary: 'Check seat availability' })
-  async checkSeatAvailability(
-    @Param('flightId') flightId: number,
-    @Query('seats') seats: string,
-  ) {
+  async checkSeatAvailability(@Param('flightId') flightId: number, @Query('seats') seats: string) {
     const result = await this.callService(MP.BOOKING_CHECK_AVAILABILITY, {
       flightId,
       seats,
@@ -138,11 +112,8 @@ export class BookingController {
     try {
       return await firstValueFrom(this.bookingClient.send<T>(pattern, data));
     } catch (error) {
-      const rpcError = error as any;
-      console.error(
-        `[Gateway] Error calling ${pattern}:`,
-        JSON.stringify(rpcError, null, 2),
-      );
+      const rpcError = error;
+      console.error(`[Gateway] Error calling ${pattern}:`, JSON.stringify(rpcError, null, 2));
 
       // Extract status: handle numeric and standard RMQ status formats
       let status = HttpStatus.INTERNAL_SERVER_ERROR;
@@ -152,15 +123,9 @@ export class BookingController {
         status = rpcError.status;
       } else if (typeof rpcError.statusCode === 'number') {
         status = rpcError.statusCode;
-      } else if (
-        rpcError.response?.status &&
-        typeof rpcError.response.status === 'number'
-      ) {
+      } else if (rpcError.response?.status && typeof rpcError.response.status === 'number') {
         status = rpcError.response.status;
-      } else if (
-        rpcError.response?.statusCode &&
-        typeof rpcError.response.statusCode === 'number'
-      ) {
+      } else if (rpcError.response?.statusCode && typeof rpcError.response.statusCode === 'number') {
         status = rpcError.response.statusCode;
       }
 

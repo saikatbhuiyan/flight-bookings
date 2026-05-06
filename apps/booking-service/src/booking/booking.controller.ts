@@ -1,14 +1,4 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Put,
-  Body,
-  Param,
-  Query,
-  Req,
-  HttpStatus,
-} from '@nestjs/common';
+import { Controller, Post, Get, Put, Body, Param, Query, Req, HttpStatus } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { MessagePattern as MP } from '@app/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
@@ -20,7 +10,7 @@ import { RateLimit } from '@app/rate-limiter';
 @Controller('bookings')
 @ApiBearerAuth()
 export class BookingController {
-  constructor(private readonly bookingService: BookingService) { }
+  constructor(private readonly bookingService: BookingService) {}
 
   @Post()
   @RateLimit({ points: 3, duration: 60, blockDuration: 300 })
@@ -32,8 +22,7 @@ export class BookingController {
     const data = await this.bookingService.createBooking(dto, req.user.id);
     return {
       success: true,
-      message:
-        'Booking initiated successfully. Please complete payment within 15 minutes.',
+      message: 'Booking initiated successfully. Please complete payment within 15 minutes.',
       data,
     };
   }
@@ -51,11 +40,7 @@ export class BookingController {
     @Body() paymentDto: { paymentTransactionId: string },
     @Req() req: any,
   ) {
-    const data = await this.bookingService.completeBooking(
-      bookingId,
-      req.user.id,
-      paymentDto.paymentTransactionId,
-    );
+    const data = await this.bookingService.completeBooking(bookingId, req.user.id, paymentDto.paymentTransactionId);
     return {
       success: true,
       message: 'Booking confirmed successfully!',
@@ -71,16 +56,8 @@ export class BookingController {
   @ApiOperation({ summary: 'Cancel a booking' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Booking cancelled successfully' })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Booking not found' })
-  async cancelBooking(
-    @Param('bookingId') bookingId: string,
-    @Body() cancelDto: { reason?: string },
-    @Req() req: any,
-  ) {
-    const data = await this.bookingService.cancelBooking(
-      bookingId,
-      req.user.id,
-      cancelDto.reason,
-    );
+  async cancelBooking(@Param('bookingId') bookingId: string, @Body() cancelDto: { reason?: string }, @Req() req: any) {
+    const data = await this.bookingService.cancelBooking(bookingId, req.user.id, cancelDto.reason);
     return {
       success: true,
       message: 'Booking cancelled successfully',
@@ -97,10 +74,7 @@ export class BookingController {
   @ApiResponse({ status: HttpStatus.OK, description: 'Booking extended successfully' })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Booking not found' })
   async extendBooking(@Param('bookingId') bookingId: string, @Req() req: any) {
-    const data = await this.bookingService.extendBooking(
-      bookingId,
-      req.user.id,
-    );
+    const data = await this.bookingService.extendBooking(bookingId, req.user.id);
     return {
       success: true,
       message: 'Booking extended by 5 minutes',
@@ -139,14 +113,8 @@ export class BookingController {
    */
   @Get('flights/:flightId/seats/availability')
   @ApiOperation({ summary: 'Check if seats are available' })
-  async checkSeatAvailability(
-    @Param('flightId') flightId: number,
-    @Query('seats') seats: string,
-  ) {
-    const data = await this.bookingService.checkSeatAvailability(
-      flightId,
-      seats,
-    );
+  async checkSeatAvailability(@Param('flightId') flightId: number, @Query('seats') seats: string) {
+    const data = await this.bookingService.checkSeatAvailability(flightId, seats);
     return {
       success: true,
       data,
@@ -158,9 +126,7 @@ export class BookingController {
   // ============================================
 
   @MessagePattern(MP.BOOKING_CREATE)
-  async handleCreateBooking(
-    @Payload() data: CreateBookingDto & { userId: number },
-  ) {
+  async handleCreateBooking(@Payload() data: CreateBookingDto & { userId: number }) {
     return this.bookingService.createBooking(data, data.userId);
   }
 
@@ -173,49 +139,31 @@ export class BookingController {
       paymentTransactionId: string;
     },
   ) {
-    return this.bookingService.completeBooking(
-      data.bookingId,
-      data.userId,
-      data.paymentTransactionId,
-    );
+    return this.bookingService.completeBooking(data.bookingId, data.userId, data.paymentTransactionId);
   }
 
   @MessagePattern(MP.BOOKING_CANCEL)
-  async handleCancelBooking(
-    @Payload() data: { bookingId: string; userId: number; reason?: string },
-  ) {
-    return this.bookingService.cancelBooking(
-      data.bookingId,
-      data.userId,
-      data.reason,
-    );
+  async handleCancelBooking(@Payload() data: { bookingId: string; userId: number; reason?: string }) {
+    return this.bookingService.cancelBooking(data.bookingId, data.userId, data.reason);
   }
 
   @MessagePattern(MP.BOOKING_EXTEND)
-  async handleExtendBooking(
-    @Payload() data: { bookingId: string; userId: number },
-  ) {
+  async handleExtendBooking(@Payload() data: { bookingId: string; userId: number }) {
     return this.bookingService.extendBooking(data.bookingId, data.userId);
   }
 
   @MessagePattern(MP.BOOKING_FIND_BY_USER)
-  async handleGetMyBookings(
-    @Payload() data: { userId: number; status?: string },
-  ) {
+  async handleGetMyBookings(@Payload() data: { userId: number; status?: string }) {
     return this.bookingService.getMyBookings(data.userId, data.status);
   }
 
   @MessagePattern(MP.BOOKING_FIND_BY_ID)
-  async handleGetBooking(
-    @Payload() data: { bookingId: string; userId: number },
-  ) {
+  async handleGetBooking(@Payload() data: { bookingId: string; userId: number }) {
     return this.bookingService.getBooking(data.bookingId, data.userId);
   }
 
   @MessagePattern(MP.BOOKING_CHECK_AVAILABILITY)
-  async handleCheckAvailability(
-    @Payload() data: { flightId: number; seats: string },
-  ) {
+  async handleCheckAvailability(@Payload() data: { flightId: number; seats: string }) {
     return this.bookingService.checkSeatAvailability(data.flightId, data.seats);
   }
 }

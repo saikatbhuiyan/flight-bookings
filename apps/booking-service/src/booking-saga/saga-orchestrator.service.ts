@@ -1,4 +1,3 @@
-
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
@@ -35,7 +34,7 @@ export class BookingSagaOrchestrator {
     private readonly seatLockService: SeatLockService,
     private readonly outboxService: OutboxService,
     private readonly dataSource: DataSource,
-  ) { }
+  ) {}
 
   /**
    * Execute booking saga with persistence and idempotency
@@ -253,11 +252,7 @@ export class BookingSagaOrchestrator {
         await manager.save(SagaState, sagaState);
 
         // Update booking status
-        await manager.update(
-          Booking,
-          { bookingReference: sagaState.bookingId },
-          { status: BookingStatus.PENDING },
-        );
+        await manager.update(Booking, { bookingReference: sagaState.bookingId }, { status: BookingStatus.PENDING });
       });
 
       this.logger.log('Step 3 completed: Flight reservation requested');
@@ -405,13 +400,7 @@ export class BookingSagaOrchestrator {
           };
 
           // Release flight seats via outbox
-          await this.outboxService.storeEvent(
-            'BOOKING',
-            sagaState.bookingId,
-            'flight.release-seats',
-            payload,
-            manager,
-          );
+          await this.outboxService.storeEvent('BOOKING', sagaState.bookingId, 'flight.release-seats', payload, manager);
         }
 
         if (sagaState.currentStep >= 2) {

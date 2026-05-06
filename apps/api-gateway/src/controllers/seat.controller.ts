@@ -13,21 +13,12 @@ import {
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import {
-  MessagePattern as MP,
-  Public,
-  Roles,
-  Role,
-  CreateSeatDto,
-  BulkCreateSeatsDto,
-} from '@app/common';
+import { MessagePattern as MP, Public, Roles, Role, CreateSeatDto, BulkCreateSeatsDto } from '@app/common';
 
 @ApiTags('Seats')
 @Controller('seats')
 export class SeatController {
-  constructor(
-    @Inject('FLIGHT_SERVICE') private readonly flightClient: ClientProxy,
-  ) {}
+  constructor(@Inject('FLIGHT_SERVICE') private readonly flightClient: ClientProxy) {}
 
   @Post()
   @Roles(Role.ADMIN)
@@ -65,10 +56,7 @@ export class SeatController {
       return await firstValueFrom(this.flightClient.send<T>(pattern, data));
     } catch (error) {
       const rpcError = error;
-      const status =
-        rpcError.statusCode ||
-        rpcError.status ||
-        HttpStatus.INTERNAL_SERVER_ERROR;
+      const status = rpcError.statusCode || rpcError.status || HttpStatus.INTERNAL_SERVER_ERROR;
       const message = rpcError.message || 'Internal server error';
       throw new HttpException(message, status);
     }

@@ -5,7 +5,6 @@ import { Response } from 'express';
 
 describe('CookieService', () => {
   let service: CookieService;
-  let configService: ConfigService;
 
   const mockResponse = {
     cookie: jest.fn(),
@@ -31,7 +30,6 @@ describe('CookieService', () => {
     }).compile();
 
     service = module.get<CookieService>(CookieService);
-    configService = module.get<ConfigService>(ConfigService);
   });
 
   it('should be defined', () => {
@@ -40,6 +38,7 @@ describe('CookieService', () => {
 
   it('should calculate milliseconds correctly from seconds', () => {
     service.setAccessToken(mockResponse, 'token', 'device1');
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(mockResponse.cookie).toHaveBeenCalledWith(
       'accessToken_device1',
       'token',
@@ -66,6 +65,7 @@ describe('CookieService', () => {
     const serviceWithNoConfig = module.get<CookieService>(CookieService);
     serviceWithNoConfig.setAccessToken(mockResponse, 'token', 'device1');
 
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(mockResponse.cookie).toHaveBeenCalledWith(
       'accessToken_device1',
       'token',

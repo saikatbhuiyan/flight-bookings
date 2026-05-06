@@ -152,4 +152,4 @@ import { RateLimiterModule } from '@app/rate-limiter';
     },
   ],
 })
-export class AppModule { }
+export class AppModule {}

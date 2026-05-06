@@ -1,9 +1,4 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AUTH_TYPE_KEY, IS_PUBLIC_KEY } from '../decorators';
 import { AccessTokenGuard } from './access-token.guard';
@@ -13,10 +8,7 @@ import { AuthType } from '../enums';
 export class AuthenticationGuard implements CanActivate {
   private static readonly defaultAuthType = AuthType.Bearer;
 
-  private readonly authTypeGuardMap: Record<
-    AuthType,
-    CanActivate | CanActivate[]
-  >;
+  private readonly authTypeGuardMap: Record<AuthType, CanActivate | CanActivate[]>;
 
   constructor(
     private readonly reflector: Reflector,
@@ -35,10 +27,10 @@ export class AuthenticationGuard implements CanActivate {
     ]);
     if (isPublic) return true;
 
-    const authTypes = this.reflector.getAllAndOverride<AuthType[]>(
-      AUTH_TYPE_KEY,
-      [context.getHandler(), context.getClass()],
-    ) ?? [AuthenticationGuard.defaultAuthType];
+    const authTypes = this.reflector.getAllAndOverride<AuthType[]>(AUTH_TYPE_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]) ?? [AuthenticationGuard.defaultAuthType];
 
     const guards = authTypes.flatMap((type) => this.authTypeGuardMap[type]);
 

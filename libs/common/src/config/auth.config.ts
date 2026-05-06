@@ -5,10 +5,7 @@ import { registerAs } from '@nestjs/config';
  * Supports basic suffixes: s (seconds), m (minutes), h (hours), d (days).
  * Default is seconds if no suffix is provided.
  */
-function parseDurationToSeconds(
-  duration: string | undefined,
-  defaultSeconds: number,
-): number {
+function parseDurationToSeconds(duration: string | undefined, defaultSeconds: number): number {
   if (!duration) return defaultSeconds;
 
   const matches = duration.match(/^(\d+)([smhd]?)$/);
@@ -40,14 +37,8 @@ function parseDurationToSeconds(
 export default registerAs('jwt', () => ({
   secret: process.env.JWT_ACCESS_SECRET,
   refreshSecret: process.env.JWT_REFRESH_SECRET,
-  accessTokenTtl: parseDurationToSeconds(
-    process.env.JWT_ACCESS_EXPIRATION,
-    3600,
-  ),
-  refreshTokenTtl: parseDurationToSeconds(
-    process.env.JWT_REFRESH_EXPIRATION,
-    604800,
-  ),
+  accessTokenTtl: parseDurationToSeconds(process.env.JWT_ACCESS_EXPIRATION, 3600),
+  refreshTokenTtl: parseDurationToSeconds(process.env.JWT_REFRESH_EXPIRATION, 604800),
   tokenAudience: process.env.JWT_TOKEN_AUDIENCE,
   tokenIssuer: process.env.JWT_TOKEN_ISSUER,
 }));

@@ -1,11 +1,7 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { AirplaneRepository } from '../repositories/airplane.repository';
-import {
-  CreateAirplaneDto,
-  UpdateAirplaneDto,
-  QueryAirplaneDto,
-} from '@app/common';
+import { CreateAirplaneDto, UpdateAirplaneDto, QueryAirplaneDto } from '@app/common';
 import { AirplaneResponseDto } from '../dto/airplane-response.dto';
 import { PaginatedResponseDto } from '../../../common/dto/pagination-response.dto';
 
@@ -15,12 +11,8 @@ export class AirplaneService {
 
   constructor(private readonly airplaneRepository: AirplaneRepository) {}
 
-  async create(
-    createAirplaneDto: CreateAirplaneDto,
-  ): Promise<AirplaneResponseDto> {
-    this.logger.log(
-      `Creating new airplane: ${createAirplaneDto.manufacturer} ${createAirplaneDto.modelNumber}`,
-    );
+  async create(createAirplaneDto: CreateAirplaneDto): Promise<AirplaneResponseDto> {
+    this.logger.log(`Creating new airplane: ${createAirplaneDto.manufacturer} ${createAirplaneDto.modelNumber}`);
 
     const airplane = await this.airplaneRepository.create(createAirplaneDto);
     return plainToInstance(AirplaneResponseDto, airplane, {
@@ -28,9 +20,7 @@ export class AirplaneService {
     });
   }
 
-  async findAll(
-    queryDto: QueryAirplaneDto,
-  ): Promise<PaginatedResponseDto<AirplaneResponseDto>> {
+  async findAll(queryDto: QueryAirplaneDto): Promise<PaginatedResponseDto<AirplaneResponseDto>> {
     this.logger.log('Fetching airplanes with filters');
 
     const [airplanes, total] = await this.airplaneRepository.search(queryDto);
@@ -41,12 +31,7 @@ export class AirplaneService {
       }),
     );
 
-    return PaginatedResponseDto.create(
-      airplaneDtos,
-      queryDto.page,
-      queryDto.limit,
-      total,
-    );
+    return PaginatedResponseDto.create(airplaneDtos, queryDto.page, queryDto.limit, total);
   }
 
   async findOne(id: number): Promise<AirplaneResponseDto> {
@@ -62,10 +47,7 @@ export class AirplaneService {
     });
   }
 
-  async update(
-    id: number,
-    updateAirplaneDto: UpdateAirplaneDto,
-  ): Promise<AirplaneResponseDto> {
+  async update(id: number, updateAirplaneDto: UpdateAirplaneDto): Promise<AirplaneResponseDto> {
     this.logger.log(`Updating airplane with ID: ${id}`);
 
     const updated = await this.airplaneRepository.update(id, updateAirplaneDto);

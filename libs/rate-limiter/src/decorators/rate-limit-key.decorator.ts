@@ -10,16 +10,14 @@ import { createParamDecorator, ExecutionContext } from '@nestjs/common';
  *   console.log('Rate limit key:', key);
  * }
  */
-export const RateLimitKey = createParamDecorator(
-  (data: string | undefined, ctx: ExecutionContext): string => {
-    const request = ctx.switchToHttp().getRequest();
+export const RateLimitKey = createParamDecorator((data: string | undefined, ctx: ExecutionContext): string => {
+  const request = ctx.switchToHttp().getRequest();
 
-    if (data) {
-      // Custom key from request property
-      return request[data];
-    }
+  if (data) {
+    // Custom key from request property
+    return request[data];
+  }
 
-    // Default: use IP address
-    return request.ip || request.connection.remoteAddress || 'unknown';
-  },
-);
+  // Default: use IP address
+  return request.ip || request.connection.remoteAddress || 'unknown';
+});

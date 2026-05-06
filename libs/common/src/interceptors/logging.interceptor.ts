@@ -1,11 +1,4 @@
-import {
-  Injectable,
-  NestInterceptor,
-  ExecutionContext,
-  CallHandler,
-  HttpException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler, HttpException, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
 import { Observable, throwError } from 'rxjs';
@@ -17,13 +10,7 @@ import type { LoggerService } from '@nestjs/common';
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
   private readonly isDev: boolean;
-  private readonly sensitiveFields = [
-    'password',
-    'token',
-    'secret',
-    'apiKey',
-    'refreshToken',
-  ];
+  private readonly sensitiveFields = ['password', 'token', 'secret', 'apiKey', 'refreshToken'];
 
   constructor(
     private readonly configService: ConfigService,
@@ -56,15 +43,13 @@ export class LoggingInterceptor implements NestInterceptor {
         ip = request.ip;
         userAgent = request.get('User-Agent') || '';
         correlationId =
-          (request.headers['x-correlation-id'] as string) ||
-          (request as any).correlationId ||
-          correlationId;
+          (request.headers['x-correlation-id'] as string) || (request as any).correlationId || correlationId;
         requestBody = request.body;
         requestHeaders = request.headers;
       } else if (isRpc) {
         const rpcContext = context.switchToRpc();
         const data = rpcContext.getData();
-        const ctx = rpcContext.getContext(); // RmqContext or similar
+        rpcContext.getContext(); // RmqContext or similar
         method = 'RPC';
         url = context.getHandler().name;
         // Try to find correlationId in data payload
@@ -111,9 +96,7 @@ export class LoggingInterceptor implements NestInterceptor {
         }
 
         const reqStr = this.safeStringify(requestBody);
-        const resStr = this.safeStringify(
-          this.isDev ? this.sanitize(responseBody) : responseBody,
-        );
+        const resStr = this.safeStringify(this.isDev ? this.sanitize(responseBody) : responseBody);
         const requestSize = reqStr ? reqStr.length : 0;
         const responseSize = resStr ? resStr.length : 0;
 
@@ -172,8 +155,7 @@ export class LoggingInterceptor implements NestInterceptor {
 
   private sanitize(body: unknown, depth = 1): unknown {
     if (!body || typeof body !== 'object') return body;
-    if (Array.isArray(body))
-      return depth > 0 ? body.map((i) => this.sanitize(i, depth - 1)) : body;
+    if (Array.isArray(body)) return depth > 0 ? body.map((i) => this.sanitize(i, depth - 1)) : body;
     const clone: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(body)) {
       clone[k] = this.sensitiveFields.includes(k)
