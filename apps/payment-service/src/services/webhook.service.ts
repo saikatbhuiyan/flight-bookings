@@ -1,7 +1,9 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
+import { createHash } from 'crypto';
 import { PaymentAuditLog, AuditAction } from '../entities/payment-audit-log.entity';
+import { WebhookEventEntity, WebhookEventStatus } from '../entities/webhook-event.entity';
 import { PaymentGatewayFactory } from '../gateways/gateway.factory';
 import { PaymentService } from './payment.service';
 
@@ -10,121 +12,133 @@ export class WebhookService {
   private readonly logger = new Logger(WebhookService.name);
 
   constructor(
+    private readonly dataSource: DataSource,
     @InjectRepository(PaymentAuditLog)
-    private auditLogRepository: Repository<PaymentAuditLog>,
-    private gatewayFactory: PaymentGatewayFactory,
-    private paymentService: PaymentService,
+    private readonly auditLogRepository: Repository<PaymentAuditLog>,
+    @InjectRepository(WebhookEventEntity)
+    private readonly webhookEventRepository: Repository<WebhookEventEntity>,
+    private readonly gatewayFactory: PaymentGatewayFactory,
+    private readonly paymentService: PaymentService,
   ) {}
 
-  /**
-   * Handle Stripe webhook
-   */
   async handleStripeWebhook(payload: any, signature: string): Promise<void> {
-    this.logger.log('Processing Stripe webhook');
+    await this.handleWebhook('stripe', payload, signature);
+  }
+
+  async handlePayPalWebhook(payload: any, signature: string): Promise<void> {
+    await this.handleWebhook('paypal', payload, signature);
+  }
+
+  private async handleWebhook(gatewayName: string, payload: any, signature: string): Promise<void> {
+    this.logger.log(`Processing ${gatewayName} webhook`);
 
     try {
-      // Get Stripe gateway
-      const gateway = this.gatewayFactory.getByName('stripe');
-
-      // Verify webhook signature
+      const gateway = this.gatewayFactory.getByName(gatewayName);
       const event = await gateway.verifyWebhook(payload, signature);
+      const payloadHash = this.hashPayload(payload);
 
-      // Create audit log
-      await this.createAuditLog({
-        entityType: 'webhook',
-        entityId: event.paymentIntentId || 'unknown',
-        action: AuditAction.WEBHOOK_RECEIVED,
-        changes: { type: event.type, status: event.status },
+      const webhookEvent = await this.dataSource.transaction(async (manager) => {
+        const repository = manager.getRepository(WebhookEventEntity);
+        const existing = await repository.findOne({
+          where: { gateway: gatewayName, eventId: event.id },
+        });
+
+        if (existing) {
+          await this.createAuditLog({
+            entityType: 'webhook',
+            entityId: existing.id,
+            action: AuditAction.WEBHOOK_DEDUPED,
+            changes: { gateway: gatewayName, eventId: event.id, eventType: event.type },
+          });
+          return existing;
+        }
+
+        const created = repository.create({
+          gateway: gatewayName,
+          eventId: event.id,
+          eventType: event.type,
+          gatewayPaymentId: event.paymentIntentId,
+          payloadHash,
+          payload: event.data,
+          status: WebhookEventStatus.RECEIVED,
+          receivedAt: new Date(),
+        });
+
+        const saved = await repository.save(created);
+
+        await this.createAuditLog({
+          entityType: 'webhook',
+          entityId: saved.id,
+          action: AuditAction.WEBHOOK_RECEIVED,
+          changes: { gateway: gatewayName, eventId: event.id, eventType: event.type },
+        });
+
+        return saved;
       });
 
-      // Handle different event types
-      switch (event.type) {
-        case 'payment_intent.succeeded':
-          await this.handlePaymentSucceeded(event);
-          break;
-
-        case 'payment_intent.payment_failed':
-          this.handlePaymentFailed(event);
-          break;
-
-        case 'charge.refunded':
-          this.handleRefundProcessed(event);
-          break;
-
-        default:
-          this.logger.log(`Unhandled webhook event type: ${event.type}`);
+      if (webhookEvent.status === WebhookEventStatus.PROCESSED) {
+        return;
       }
 
-      this.logger.log(`Stripe webhook processed: ${event.type}`);
-    } catch (error) {
-      this.logger.error(`Failed to process Stripe webhook: ${error.message}`, error.stack);
-      throw new BadRequestException('Webhook verification failed');
-    }
-  }
+      await this.processWebhookEvent(gatewayName, event.type, event.paymentIntentId, event.data, event.id);
 
-  /**
-   * Handle PayPal webhook
-   */
-  async handlePayPalWebhook(payload: any, signature: string): Promise<void> {
-    this.logger.log('Processing PayPal webhook');
+      webhookEvent.status = WebhookEventStatus.PROCESSED;
+      webhookEvent.processedAt = new Date();
+      webhookEvent.lastError = null;
+      await this.webhookEventRepository.save(webhookEvent);
 
-    try {
-      // Get PayPal gateway
-      const gateway = this.gatewayFactory.getByName('paypal');
-
-      // Verify webhook signature
-      const event = await gateway.verifyWebhook(payload, signature);
-
-      // Create audit log
       await this.createAuditLog({
         entityType: 'webhook',
-        entityId: event.paymentIntentId || 'unknown',
-        action: AuditAction.WEBHOOK_RECEIVED,
-        changes: { type: event.type, status: event.status },
+        entityId: webhookEvent.id,
+        action: AuditAction.WEBHOOK_PROCESSED,
+        changes: { gateway: gatewayName, eventId: event.id, eventType: event.type },
       });
-
-      // Handle PayPal events (to be implemented when PayPal provider is complete)
-      this.logger.log(`PayPal webhook processed: ${event.type}`);
     } catch (error) {
-      this.logger.error(`Failed to process PayPal webhook: ${error.message}`, error.stack);
+      this.logger.error(`Failed to process ${gatewayName} webhook: ${error.message}`, error.stack);
       throw new BadRequestException('Webhook verification failed');
     }
   }
 
-  /**
-   * Handle payment succeeded event
-   */
-  private async handlePaymentSucceeded(event: any): Promise<void> {
-    this.logger.log(`Payment succeeded: ${event.paymentIntentId}`);
+  private async processWebhookEvent(
+    gatewayName: string,
+    eventType: string,
+    gatewayPaymentId: string | undefined,
+    data: Record<string, any>,
+    eventId: string,
+  ): Promise<void> {
+    if (!gatewayPaymentId) {
+      return;
+    }
 
-    try {
-      // Capture the payment in our system
-      await this.paymentService.capturePayment(event.paymentIntentId);
-    } catch (error) {
-      this.logger.error(`Failed to handle payment succeeded: ${error.message}`, error.stack);
-      // Don't throw - webhook should return 200 even if processing fails
+    switch (eventType) {
+      case 'payment_intent.succeeded':
+      case 'checkout.order.approved':
+        await this.paymentService.confirmPaymentByGatewayId(gatewayPaymentId, `webhook:${gatewayName}:${eventId}`);
+        return;
+
+      case 'payment_intent.payment_failed':
+      case 'checkout.order.failed':
+        await this.paymentService.markPaymentFailedByGatewayId(
+          gatewayPaymentId,
+          data['last_payment_error']?.message || 'Payment failed according to webhook event',
+        );
+        return;
+
+      case 'charge.refunded':
+      case 'payment.refunded':
+        await this.paymentService.refreshRefundedStatusByGatewayId(gatewayPaymentId);
+        return;
+
+      default:
+        this.logger.log(`Unhandled ${gatewayName} webhook event type: ${eventType}`);
     }
   }
 
-  /**
-   * Handle payment failed event
-   */
-  private handlePaymentFailed(event: any): void {
-    this.logger.log(`Payment failed: ${event.paymentIntentId}`);
-    // Additional failure handling can be added here
+  private hashPayload(payload: any): string {
+    const body = typeof payload === 'string' ? payload : JSON.stringify(payload);
+    return createHash('sha256').update(body).digest('hex');
   }
 
-  /**
-   * Handle refund processed event
-   */
-  private handleRefundProcessed(event: any): void {
-    this.logger.log(`Refund processed: ${event.data.id}`);
-    // Additional refund handling can be added here
-  }
-
-  /**
-   * Create audit log entry
-   */
   private async createAuditLog(data: {
     entityType: string;
     entityId: string;

@@ -3,11 +3,11 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateRefundDto {
   @ApiProperty({
-    description: 'Payment transaction ID to refund',
+    description: 'Payment ID to refund',
     example: '550e8400-e29b-41d4-a716-446655440000',
   })
   @IsString()
-  transactionId: string;
+  paymentId: string;
 
   @ApiProperty({
     description: 'Booking ID',

@@ -81,8 +81,10 @@ export class PayPalGatewayProvider implements IPaymentGateway {
     throw new Error('PayPal refundPayment not yet implemented');
   }
 
-  verifyWebhook(): Promise<WebhookEvent> {
+  verifyWebhook(payload: any, signature: string): Promise<WebhookEvent> {
     this.logger.log('Verifying PayPal webhook signature');
+    void payload;
+    void signature;
 
     // TODO: use PayPal SDK WebhooksApi.verifyWebhookSignature()
 

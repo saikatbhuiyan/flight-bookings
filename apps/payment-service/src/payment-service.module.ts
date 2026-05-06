@@ -15,9 +15,11 @@ import {
 } from '@app/common';
 
 // Entities
-import { PaymentIntent } from './entities/payment-intent.entity';
-import { PaymentTransaction } from './entities/payment-transaction.entity';
+import { Payment } from './entities/payment.entity';
 import { Refund } from './entities/refund.entity';
+import { IdempotencyKey } from './entities/idempotency-key.entity';
+import { LedgerEntry } from './entities/ledger-entry.entity';
+import { WebhookEventEntity } from './entities/webhook-event.entity';
 import { PaymentAuditLog } from './entities/payment-audit-log.entity';
 
 // Services
@@ -45,10 +47,10 @@ import { rabbitmqConfig } from './config/rabbitmq.config';
       envFilePath: '.env',
     }),
     DatabaseModule.forRoot(
-      [PaymentIntent, PaymentTransaction, Refund, PaymentAuditLog],
+      [Payment, Refund, IdempotencyKey, LedgerEntry, WebhookEventEntity, PaymentAuditLog],
       [__dirname + '/migrations/*.{ts,js}'],
     ),
-    TypeOrmModule.forFeature([PaymentIntent, PaymentTransaction, Refund, PaymentAuditLog]),
+    TypeOrmModule.forFeature([Payment, Refund, IdempotencyKey, LedgerEntry, WebhookEventEntity, PaymentAuditLog]),
     CommonModule,
     WinstonModule.forRoot(winstonLoggerConfig),
     HealthModule,

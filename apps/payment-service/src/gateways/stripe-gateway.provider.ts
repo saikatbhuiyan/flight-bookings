@@ -115,6 +115,7 @@ export class StripeGatewayProvider implements IPaymentGateway {
         amount: updated.amount,
         currency: updated.currency.toUpperCase(),
         status: updated.status,
+        failureCode: updated.last_payment_error?.code,
         errorMessage: !success ? updated.last_payment_error?.message : undefined,
         rawResponse: updated,
       };
@@ -146,6 +147,7 @@ export class StripeGatewayProvider implements IPaymentGateway {
         refundId: refund.id,
         amount: refund.amount,
         status: refund.status,
+        rawResponse: refund,
       };
     } catch (error) {
       this.logger.error(`Failed to create Stripe refund: ${error.message}`, error.stack);
@@ -170,12 +172,14 @@ export class StripeGatewayProvider implements IPaymentGateway {
 
       this.logger.log(`Stripe webhook verified: ${event.type}`);
 
-      return {
+      return Promise.resolve({
+        id: event.id,
         type: event.type,
         paymentIntentId: event.data.object['id'],
+        transactionId: event.data.object['latest_charge'],
         status: event.data.object['status'],
         data: event.data.object,
-      };
+      });
     } catch (error) {
       this.logger.error(`Failed to verify Stripe webhook: ${error.message}`, error.stack);
       throw error;

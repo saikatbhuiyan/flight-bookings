@@ -66,6 +66,7 @@ export interface PaymentResult {
   amount: number;
   currency: string;
   status: string;
+  failureCode?: string;
   errorMessage?: string;
   rawResponse?: any;
 }
@@ -81,10 +82,12 @@ export interface RefundResult {
   refundId: string;
   amount: number;
   status: string;
+  rawResponse?: any;
   errorMessage?: string;
 }
 
 export interface WebhookEvent {
+  id: string;
   type: string;
   paymentIntentId?: string;
   transactionId?: string;

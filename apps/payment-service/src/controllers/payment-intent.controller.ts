@@ -1,8 +1,10 @@
-import { Controller, Post, Get, Body, Param, Logger } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Logger, Headers, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { PaymentService } from '../services/payment.service';
 import { CreatePaymentIntentDto } from '../dto/create-payment-intent.dto';
+import { ConfirmPaymentIntentDto } from '../dto/confirm-payment-intent.dto';
+import { QueryLedgerEntriesDto } from '../dto/query-ledger-entries.dto';
 
 @ApiTags('Payment Intents')
 @Controller('payment-intents')
@@ -15,9 +17,21 @@ export class PaymentIntentController {
   @ApiOperation({ summary: 'Create a payment intent' })
   @ApiResponse({ status: 201, description: 'Payment intent created successfully' })
   @ApiResponse({ status: 400, description: 'Invalid request' })
-  async createPaymentIntent(@Body() dto: CreatePaymentIntentDto) {
+  async createPaymentIntent(@Body() dto: CreatePaymentIntentDto, @Headers('idempotency-key') idempotencyKey?: string) {
     this.logger.log(`Creating payment intent for booking ${dto.bookingId}`);
-    return this.paymentService.createPaymentIntent(dto);
+    return this.paymentService.createPaymentIntent(dto, idempotencyKey);
+  }
+
+  @Post(':id/confirm')
+  @ApiOperation({ summary: 'Confirm a payment intent' })
+  @ApiResponse({ status: 200, description: 'Payment intent confirmed successfully' })
+  @ApiResponse({ status: 404, description: 'Payment intent not found' })
+  async confirmPaymentIntent(
+    @Param('id') id: string,
+    @Body() dto: ConfirmPaymentIntentDto,
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ) {
+    return this.paymentService.confirmPaymentIntent(id, dto, idempotencyKey);
   }
 
   @Get(':id')
@@ -36,6 +50,13 @@ export class PaymentIntentController {
     return this.paymentService.getPaymentIntentByBooking(bookingId);
   }
 
+  @Get('/ledger/entries')
+  @ApiOperation({ summary: 'Query ledger entries for reporting and reconciliation' })
+  @ApiResponse({ status: 200, description: 'Ledger entries returned successfully' })
+  async getLedgerEntries(@Query() query: QueryLedgerEntriesDto) {
+    return this.paymentService.getLedgerEntries(query);
+  }
+
   /**
    * RabbitMQ message handler for creating payment intents
    */
@@ -52,5 +73,11 @@ export class PaymentIntentController {
   async handleGetIntent(@Payload() data: { id: string }) {
     this.logger.log(`[RabbitMQ] Getting payment intent ${data.id}`);
     return this.paymentService.getPaymentIntent(data.id);
+  }
+
+  @MessagePattern('payment.confirm_intent')
+  async handleConfirmIntent(@Payload() data: { id: string; dto?: ConfirmPaymentIntentDto; idempotencyKey?: string }) {
+    this.logger.log(`[RabbitMQ] Confirming payment intent ${data.id}`);
+    return this.paymentService.confirmPaymentIntent(data.id, data.dto || {}, data.idempotencyKey);
   }
 }

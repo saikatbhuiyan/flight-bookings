@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Query, Logger } from '@nestjs/common';
+import { Controller, Post, Get, Body, Query, Logger, Headers } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { RefundService } from '../services/refund.service';
@@ -15,9 +15,9 @@ export class RefundController {
   @ApiOperation({ summary: 'Create a refund' })
   @ApiResponse({ status: 201, description: 'Refund created successfully' })
   @ApiResponse({ status: 400, description: 'Invalid request' })
-  async createRefund(@Body() dto: CreateRefundDto) {
-    this.logger.log(`Creating refund for transaction ${dto.transactionId}`);
-    return this.refundService.createRefund(dto);
+  async createRefund(@Body() dto: CreateRefundDto, @Headers('idempotency-key') idempotencyKey?: string) {
+    this.logger.log(`Creating refund for payment ${dto.paymentId}`);
+    return this.refundService.createRefund(dto, idempotencyKey);
   }
 
   @Get()
@@ -31,9 +31,11 @@ export class RefundController {
    * RabbitMQ message handler for creating refunds
    */
   @MessagePattern('payment.create_refund')
-  async handleCreateRefund(@Payload() dto: CreateRefundDto) {
-    this.logger.log(`[RabbitMQ] Creating refund for transaction ${dto.transactionId}`);
-    return this.refundService.createRefund(dto);
+  async handleCreateRefund(@Payload() data: { dto: CreateRefundDto; idempotencyKey?: string } | CreateRefundDto) {
+    const dto = 'dto' in data ? data.dto : data;
+    const idempotencyKey = 'dto' in data ? data.idempotencyKey : undefined;
+    this.logger.log(`[RabbitMQ] Creating refund for payment ${dto.paymentId}`);
+    return this.refundService.createRefund(dto, idempotencyKey);
   }
 
   /**
