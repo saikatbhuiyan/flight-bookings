@@ -1,5 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
-import { PaymentTransaction } from './payment-transaction.entity';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 
 export enum RefundStatus {
   PENDING = 'pending',
@@ -10,48 +9,48 @@ export enum RefundStatus {
 }
 
 @Entity('refunds')
-@Index(['paymentTransactionId'])
+@Index(['paymentId'])
 @Index(['bookingId'])
 @Index(['status'])
+@Index(['gatewayRefundId'], { unique: true })
 @Index(['createdAt'])
 export class Refund {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'payment_transaction_id', type: 'uuid', nullable: false })
-  @Index()
-  paymentTransactionId: string;
+  @Column({ name: 'payment_id', type: 'uuid' })
+  paymentId: string;
 
-  @ManyToOne(() => PaymentTransaction)
-  @JoinColumn({ name: 'payment_transaction_id' })
-  paymentTransaction: PaymentTransaction;
-
-  @Column({ name: 'booking_id', type: 'int', nullable: false })
-  @Index()
+  @Column({ name: 'booking_id', type: 'int' })
   bookingId: number;
 
-  @Column({ type: 'int', nullable: false, comment: 'Refund amount in cents' })
+  @Column({ type: 'int', comment: 'Refund amount in the smallest currency unit' })
   amount: number;
 
   @Column({ type: 'text', nullable: true })
-  reason: string;
+  reason?: string | null;
 
-  @Column({
-    type: 'enum',
-    enum: RefundStatus,
-    default: RefundStatus.PENDING,
-    nullable: false,
-  })
+  @Column({ name: 'idempotency_key', type: 'varchar', length: 255, nullable: true })
+  idempotencyKey?: string | null;
+
+  @Column({ type: 'enum', enum: RefundStatus, default: RefundStatus.PENDING })
   status: RefundStatus;
 
-  @Column({
-    name: 'gateway_refund_id',
-    type: 'varchar',
-    length: 255,
-    nullable: true,
-  })
-  gatewayRefundId: string;
+  @Column({ name: 'gateway_refund_id', type: 'varchar', length: 255, nullable: true, unique: true })
+  gatewayRefundId?: string | null;
+
+  @Column({ name: 'failure_reason', type: 'text', nullable: true })
+  failureReason?: string | null;
+
+  @Column({ name: 'processed_at', type: 'timestamp', nullable: true })
+  processedAt?: Date | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  metadata?: Record<string, any> | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
+
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt: Date;
 }

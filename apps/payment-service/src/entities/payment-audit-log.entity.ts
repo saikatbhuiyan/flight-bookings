@@ -2,11 +2,16 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index } from 
 
 export enum AuditAction {
   INTENT_CREATED = 'intent_created',
+  IDEMPOTENCY_REPLAYED = 'idempotency_replayed',
+  PAYMENT_CONFIRMATION_REQUESTED = 'payment_confirmation_requested',
   PAYMENT_CAPTURED = 'payment_captured',
   PAYMENT_FAILED = 'payment_failed',
   REFUND_CREATED = 'refund_created',
   REFUND_PROCESSED = 'refund_processed',
+  LEDGER_ENTRY_CREATED = 'ledger_entry_created',
   WEBHOOK_RECEIVED = 'webhook_received',
+  WEBHOOK_PROCESSED = 'webhook_processed',
+  WEBHOOK_DEDUPED = 'webhook_deduped',
 }
 
 @Entity('payment_audit_log')
