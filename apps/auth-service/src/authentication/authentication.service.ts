@@ -15,6 +15,7 @@ import { AuthAuditService } from './auth-audit.service';
 import { SignInDto, SignOutDto, RefreshTokenDto, SignUpDto } from '@app/common';
 import { Role, InvalidateRefreshTokenError } from '@app/common';
 import { User } from '../entities/user.entity';
+import { JwtSignOptions, JwtVerifyOptions } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthenticationService {
@@ -92,11 +93,13 @@ export class AuthenticationService {
         },
       ),
       this.jwtService.signAsync(
-        { refreshTokenId, deviceId },
         {
-          secret: this.configService.get<string>('jwt.secret'),
-          expiresIn: this.configService.get<number>('jwt.refreshTokenTtl'),
+          sub: user.id,
+          email: user.email,
+          refreshTokenId,
+          deviceId,
         },
+        this.getRefreshTokenSignOptions(),
       ),
     ]);
 
@@ -123,13 +126,16 @@ export class AuthenticationService {
     try {
       const payload = await this.jwtService.verifyAsync<{
         sub: number;
+        email: string;
         refreshTokenId: string;
         deviceId: string;
-      }>(refreshToken, {
-        secret: this.configService.get('jwt.secret'),
-        audience: this.configService.get('jwt.tokenAudience'),
-        issuer: this.configService.get('jwt.tokenIssuer'),
-      });
+      }>(refreshToken, this.getRefreshTokenVerifyOptions());
+
+      if (deviceId && payload.deviceId !== deviceId) {
+        throw new UnauthorizedException('Refresh token does not match device');
+      }
+
+      const effectiveDeviceId = deviceId || payload.deviceId;
 
       // Check if token is blacklisted
       if (
@@ -145,16 +151,16 @@ export class AuthenticationService {
       const isValid = await this.refreshTokenIdsStorage.validate(
         user.id,
         payload.refreshTokenId,
-        deviceId,
+        effectiveDeviceId,
       );
       if (!isValid) throw new InvalidateRefreshTokenError();
 
       // Invalidate old refresh token
-      await this.refreshTokenIdsStorage.invalidate(user.id, deviceId);
+      await this.refreshTokenIdsStorage.invalidate(user.id, effectiveDeviceId);
       await this.refreshTokenBlacklist.blacklistToken(payload.refreshTokenId);
 
       // Generate new tokens
-      return this.generateTokens(user, deviceId);
+      return this.generateTokens(user, effectiveDeviceId);
     } catch (error) {
       if (error instanceof InvalidateRefreshTokenError) {
         throw new UnauthorizedException('Invalid refresh token');
@@ -195,6 +201,29 @@ export class AuthenticationService {
       firstName: user.firstName,
       lastName: user.lastName,
       roles: [Role.USER],
+    };
+  }
+
+  private getRefreshTokenSignOptions(): JwtSignOptions {
+    const tokenAudience = this.configService.get<string>('jwt.tokenAudience');
+    const tokenIssuer = this.configService.get<string>('jwt.tokenIssuer');
+
+    return {
+      secret: this.configService.get<string>('jwt.refreshSecret'),
+      expiresIn: this.configService.get<number>('jwt.refreshTokenTtl'),
+      ...(tokenAudience ? { audience: tokenAudience } : {}),
+      ...(tokenIssuer ? { issuer: tokenIssuer } : {}),
+    };
+  }
+
+  private getRefreshTokenVerifyOptions(): JwtVerifyOptions {
+    const tokenAudience = this.configService.get<string>('jwt.tokenAudience');
+    const tokenIssuer = this.configService.get<string>('jwt.tokenIssuer');
+
+    return {
+      secret: this.configService.get<string>('jwt.refreshSecret'),
+      ...(tokenAudience ? { audience: tokenAudience } : {}),
+      ...(tokenIssuer ? { issuer: tokenIssuer } : {}),
     };
   }
 }
