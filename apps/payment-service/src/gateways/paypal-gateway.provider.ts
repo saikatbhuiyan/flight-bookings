@@ -21,7 +21,7 @@ import {
  *      npm install @paypal/checkout-server-sdk
  * 2. Configure credentials via env:
  *      PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_MODE (sandbox | live)
- * 3. Replace the TODO blocks below with the PayPal Orders v2 API.
+ * 3. Implement PayPal Orders v2 API when needed.
  *
  * PayPal docs: https://developer.paypal.com/docs/api/orders/v2/
  */
@@ -40,7 +40,7 @@ export class PayPalGatewayProvider implements IPaymentGateway {
       );
     }
 
-    this.logger.log('PayPal payment gateway initialized (stub – see TODO comments)');
+    this.logger.log('PayPal payment gateway initialized (not implemented)');
   }
 
   getGatewayName(): string {
@@ -54,29 +54,24 @@ export class PayPalGatewayProvider implements IPaymentGateway {
   createPaymentIntent(params: CreatePaymentIntentParams): Promise<PaymentIntent> {
     this.logger.log(`Creating PayPal order for booking ${params.bookingId}`);
 
-    // TODO: implement PayPal Orders API
     // Flow:
     //   1. POST /v2/checkout/orders → get orderId + approve link
     //   2. Return clientSecret = approvalUrl (client redirects user there)
     //   3. After approval, client calls capturePayment(orderId)
 
     throw new Error(
-      'PayPal gateway is not yet implemented. ' + 'Install @paypal/checkout-server-sdk and fill in the TODO blocks.',
+      'PayPal gateway is not implemented yet. Use Stripe for now or implement PayPal Orders v2 integration.',
     );
   }
 
   capturePayment(gatewayPaymentId: string): Promise<PaymentResult> {
     this.logger.log(`Capturing PayPal order: ${gatewayPaymentId}`);
 
-    // TODO: POST /v2/checkout/orders/{orderId}/capture
-
     throw new Error('PayPal capturePayment not yet implemented');
   }
 
   refundPayment(params: RefundParams): Promise<RefundResult> {
     this.logger.log(`Creating PayPal refund for ${params.transactionId}`);
-
-    // TODO: POST /v2/payments/captures/{captureId}/refund
 
     throw new Error('PayPal refundPayment not yet implemented');
   }
@@ -85,8 +80,6 @@ export class PayPalGatewayProvider implements IPaymentGateway {
     this.logger.log('Verifying PayPal webhook signature');
     void payload;
     void signature;
-
-    // TODO: use PayPal SDK WebhooksApi.verifyWebhookSignature()
 
     throw new Error('PayPal verifyWebhook not yet implemented');
   }
