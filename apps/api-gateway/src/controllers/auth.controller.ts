@@ -54,7 +54,6 @@ export class AuthController {
   })
   @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Invalid input' })
   async register(@Body() registerDto: RegisterDto) {
-    console.log('Register DTO:', registerDto);
     const result = await this.callService(MP.AUTH_REGISTER, registerDto);
     return ApiResponseDto.success(result, 'User registered successfully');
   }
@@ -80,8 +79,6 @@ export class AuthController {
       ...loginDto,
       ip: req.ip,
     });
-
-    console.log('Login result:', result);
 
     if (clientType === ClientType.WEB) {
       this.cookieService.setAccessToken(res, result.accessToken, deviceId);
