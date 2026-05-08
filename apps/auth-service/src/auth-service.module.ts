@@ -36,7 +36,7 @@ import authConfig from '@app/common/config/auth.config';
     ConfigModule.forRoot({
       isGlobal: true,
       load: [authConfig],
-      envFilePath: '.env',
+      envFilePath: ['apps/auth-service/.env', '.env'],
     }),
     DatabaseModule.forRoot([User, AuthAudit, NotificationSettings], ['apps/auth-service/src/migrations/*.ts']),
     TypeOrmModule.forFeature([User, AuthAudit, NotificationSettings]),

@@ -24,7 +24,7 @@ import { paymentProviders } from './payment/payment.providers';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
+      envFilePath: ['apps/booking-service/.env', '.env'],
     }),
     DatabaseModule.forRoot([Booking, SagaState, OutboxEvent], [__dirname + '/migrations/*.{ts,js}']),
     TypeOrmModule.forFeature([Booking, SagaState, OutboxEvent]),

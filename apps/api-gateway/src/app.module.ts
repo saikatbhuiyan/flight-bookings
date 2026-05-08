@@ -34,7 +34,7 @@ import { RateLimiterModule } from '@app/rate-limiter';
     ConfigModule.forRoot({
       isGlobal: true,
       load: [authConfig],
-      envFilePath: '.env',
+      envFilePath: ['apps/api-gateway/.env', '.env'],
     }),
     RedisModule,
     RateLimiterModule,

@@ -34,7 +34,7 @@ import { rabbitmqConfig } from './config/rabbitmq.config';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
+      envFilePath: ['apps/payment-service/.env', '.env'],
     }),
     DatabaseModule.forRoot(
       [Payment, Refund, IdempotencyKey, LedgerEntry, WebhookEventEntity, PaymentAuditLog],

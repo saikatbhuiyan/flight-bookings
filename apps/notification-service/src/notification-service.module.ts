@@ -11,7 +11,7 @@ import { LoggingInterceptor } from '@app/common';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
+      envFilePath: ['apps/notification-service/.env', '.env'],
     }),
     CommonModule,
     WinstonModule.forRoot(winstonLoggerConfig),

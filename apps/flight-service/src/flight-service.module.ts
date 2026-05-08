@@ -29,7 +29,7 @@ import { FlightModule } from './modules/flight/flight.module';
     ConfigModule.forRoot({
       isGlobal: true,
       load: [authConfig],
-      envFilePath: '.env',
+      envFilePath: ['apps/flight-service/.env', '.env'],
     }),
     ClientsModule.registerAsync([
       {
