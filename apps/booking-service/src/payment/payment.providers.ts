@@ -4,16 +4,9 @@ import { ConfigService } from '@nestjs/config';
 import { PaymentClient } from './payment-client.interface';
 import { PaymentMockClient } from './payment-mock.client';
 import { PaymentRpcClient, PAYMENT_RMQ_CLIENT } from './payment-rpc.client';
+import { BookingPaymentMode, resolveBookingPaymentMode } from './payment-mode';
 
 export const PAYMENT_CLIENT = Symbol('PAYMENT_CLIENT');
-
-function isPaymentRequired(configService: ConfigService): boolean {
-  const raw = configService.get<string>('PAYMENT_REQUIRED');
-  if (raw === undefined || raw === null || raw === '') {
-    return true;
-  }
-  return raw.toLowerCase() !== 'false' && raw !== '0';
-}
 
 export const paymentProviders: Provider[] = [
   {
@@ -39,7 +32,7 @@ export const paymentProviders: Provider[] = [
     provide: PAYMENT_CLIENT,
     inject: [ConfigService, PaymentRpcClient, PaymentMockClient],
     useFactory: (configService: ConfigService, rpc: PaymentRpcClient, mock: PaymentMockClient): PaymentClient => {
-      return isPaymentRequired(configService) ? rpc : mock;
+      return resolveBookingPaymentMode(configService) === BookingPaymentMode.PAYMENT_SERVICE ? rpc : mock;
     },
   },
 ];

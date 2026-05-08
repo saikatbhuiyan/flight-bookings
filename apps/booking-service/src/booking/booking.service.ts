@@ -4,7 +4,8 @@ import { SeatLockService } from '@app/seat-lock';
 import { BookingSagaOrchestrator, CreateBookingDto } from '../booking-saga/saga-orchestrator.service';
 import { BookingRepository } from '../repositories/booking.repository';
 import { PAYMENT_CLIENT } from '../payment/payment.providers';
-import { PaymentClient } from '../payment/payment-client.interface';
+import { CreatePaymentIntentResponse, PaymentClient } from '../payment/payment-client.interface';
+import { Booking } from '../entities/booking.entity';
 
 @Injectable()
 export class BookingService {
@@ -24,39 +25,26 @@ export class BookingService {
         userId,
       });
 
-      // If PAYMENT_REQUIRED=false, the payment client is a mock and we auto-complete
-      // so local dev can finish the full booking flow without payment-service.
-      const paymentIntent = await this.paymentClient.createPaymentIntent({
-        bookingId: booking.id,
-        bookingReference: booking.bookingReference,
-        userId,
-        amountCents: Math.round(Number(booking.totalCost || 0) * 100),
-        currency: 'USD',
-        paymentMethod: 'card',
-        idempotencyKey: `booking:${booking.bookingReference}`,
-      });
-
-      const isMock = paymentIntent?.status === 'mocked';
-      let finalBooking = booking;
-      if (isMock) {
-        const txId = paymentIntent.paymentId || `local_mock_tx_${randomUUID()}`;
-        finalBooking = await this.sagaOrchestrator.completeBooking(booking.bookingReference, txId);
-      }
+      const { finalBooking, paymentIntent } = await this.prepareBookingForPayment(booking, userId);
 
       return {
         bookingId: finalBooking.bookingReference,
         status: finalBooking.status,
         expiresAt: finalBooking.expiresAt,
         totalCost: finalBooking.totalCost,
-        paymentRequired: !isMock,
+        paymentRequired: paymentIntent.paymentRequired,
+        autoCompleted: !paymentIntent.paymentRequired,
         payment: {
           paymentId: paymentIntent.paymentId,
           clientSecret: paymentIntent.clientSecret,
+          provider: paymentIntent.provider,
+          status: paymentIntent.status,
         },
       };
     } catch (error) {
-      this.logger.warn(`createBooking failed: ${error instanceof Error ? error.message : String(error)}`);
-      throw new BadRequestException(error.message);
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`createBooking failed: ${message}`);
+      throw new BadRequestException(message);
     }
   }
 
@@ -176,5 +164,51 @@ export class BookingService {
       seats: availability,
       allAvailable: availability.every((s) => s.available),
     };
+  }
+
+  private createPaymentIntentForBooking(booking: Booking, userId: number): Promise<CreatePaymentIntentResponse> {
+    return this.paymentClient.createPaymentIntent({
+      bookingId: booking.id,
+      bookingReference: booking.bookingReference,
+      userId,
+      amountCents: Math.round(Number(booking.totalCost || 0) * 100),
+      currency: 'USD',
+      paymentMethod: 'card',
+      idempotencyKey: `booking:${booking.bookingReference}`,
+    });
+  }
+
+  private async prepareBookingForPayment(
+    booking: Booking,
+    userId: number,
+  ): Promise<{ finalBooking: Booking; paymentIntent: CreatePaymentIntentResponse }> {
+    try {
+      const paymentIntent = await this.createPaymentIntentForBooking(booking, userId);
+
+      if (paymentIntent.paymentRequired) {
+        return { finalBooking: booking, paymentIntent };
+      }
+
+      const txId = paymentIntent.paymentId || `local_mock_tx_${randomUUID()}`;
+      const finalBooking = await this.sagaOrchestrator.completeBooking(booking.bookingReference, txId);
+
+      return { finalBooking, paymentIntent };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      await this.rollbackBookingAfterPaymentFailure(booking.bookingReference, message);
+      throw error;
+    }
+  }
+
+  private async rollbackBookingAfterPaymentFailure(bookingReference: string, reason: string): Promise<void> {
+    try {
+      await this.sagaOrchestrator.cancelBooking(bookingReference, `Payment initiation failed: ${reason}`);
+    } catch (rollbackError) {
+      this.logger.error(
+        `Failed to roll back booking ${bookingReference} after payment failure: ${
+          rollbackError instanceof Error ? rollbackError.message : String(rollbackError)
+        }`,
+      );
+    }
   }
 }

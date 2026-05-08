@@ -6,6 +6,13 @@ import { CreatePaymentIntentDto } from '../dto/create-payment-intent.dto';
 import { ConfirmPaymentIntentDto } from '../dto/confirm-payment-intent.dto';
 import { QueryLedgerEntriesDto } from '../dto/query-ledger-entries.dto';
 
+type CreatePaymentIntentMessage =
+  | CreatePaymentIntentDto
+  | {
+      dto: CreatePaymentIntentDto;
+      idempotencyKey?: string;
+    };
+
 @ApiTags('Payment Intents')
 @Controller('payment-intents')
 export class PaymentIntentController {
@@ -58,9 +65,12 @@ export class PaymentIntentController {
   }
 
   @MessagePattern('payment.create_intent')
-  async handleCreateIntent(@Payload() dto: CreatePaymentIntentDto) {
+  async handleCreateIntent(@Payload() payload: CreatePaymentIntentMessage) {
+    const dto = 'dto' in payload ? payload.dto : payload;
+    const idempotencyKey = 'dto' in payload ? payload.idempotencyKey : undefined;
+
     this.logger.log(`[RabbitMQ] Creating payment intent for booking ${dto.bookingId}`);
-    return this.paymentService.createPaymentIntent(dto);
+    return this.paymentService.createPaymentIntent(dto, idempotencyKey);
   }
 
   @MessagePattern('payment.get_intent')

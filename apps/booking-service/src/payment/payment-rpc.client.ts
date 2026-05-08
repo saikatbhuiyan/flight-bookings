@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom, timeout } from 'rxjs';
 import { PaymentClient, CreatePaymentIntentRequest, CreatePaymentIntentResponse } from './payment-client.interface';
+import { BookingPaymentMode } from './payment-mode';
 
 export const PAYMENT_RMQ_CLIENT = Symbol('PAYMENT_RMQ_CLIENT');
 
@@ -13,16 +14,18 @@ export class PaymentRpcClient implements PaymentClient {
 
   async createPaymentIntent(req: CreatePaymentIntentRequest): Promise<CreatePaymentIntentResponse> {
     const payload = {
-      bookingId: req.bookingId,
-      userId: req.userId,
-      amount: req.amountCents,
-      currency: req.currency,
-      paymentMethod: req.paymentMethod,
-      metadata: {
-        bookingReference: req.bookingReference,
-        ...(req.metadata || {}),
+      dto: {
+        bookingId: req.bookingId,
+        userId: req.userId,
+        amount: req.amountCents,
+        currency: req.currency,
+        paymentMethod: req.paymentMethod,
+        metadata: {
+          bookingReference: req.bookingReference,
+          ...(req.metadata || {}),
+        },
       },
-      // gatewayOverride: optional in payment-service; omit by default
+      idempotencyKey: req.idempotencyKey,
     };
 
     try {
@@ -32,6 +35,8 @@ export class PaymentRpcClient implements PaymentClient {
         paymentId: res?.id,
         clientSecret: res?.clientSecret ?? null,
         status: res?.status,
+        paymentRequired: true,
+        provider: BookingPaymentMode.PAYMENT_SERVICE,
       };
     } catch (err) {
       this.logger.warn(`Failed to create payment intent via RPC: ${err instanceof Error ? err.message : String(err)}`);
