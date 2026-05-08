@@ -1,22 +1,21 @@
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { config } from 'dotenv';
-import { join } from 'path';
+import { existsSync } from 'fs';
 
-config();
+config({ path: 'apps/payment-service/.env' });
 
-// Use glob patterns for entities and migrations
-const entitiesPath = join(__dirname, '../../../apps/payment-service/src/entities/*.entity{.ts,.js}');
-const migrationsPath = join(__dirname, '../../../apps/payment-service/src/migrations/*{.ts,.js}');
+const dbHost = process.env.DB_HOST || 'localhost';
+const resolvedDbHost = dbHost === 'postgres' && !existsSync('/.dockerenv') ? '127.0.0.1' : dbHost;
 
 export const paymentDataSourceOptions: DataSourceOptions = {
   type: 'postgres',
-  host: process.env.DB_HOST || 'localhost',
+  host: resolvedDbHost,
   port: parseInt(process.env.DB_PORT, 10) || 5432,
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
   database: process.env.DB_NAME || 'payment_db',
-  entities: [entitiesPath],
-  migrations: [migrationsPath],
+  entities: ['apps/payment-service/src/entities/*.entity.ts'],
+  migrations: ['apps/payment-service/src/migrations/*.ts'],
   synchronize: false,
   logging: process.env.NODE_ENV === 'development',
 };
