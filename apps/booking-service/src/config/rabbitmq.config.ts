@@ -9,6 +9,11 @@ export const rabbitmqConfig: RabbitMQConfig = {
       options: { durable: true },
     },
     {
+      name: 'payment.events',
+      type: 'topic',
+      options: { durable: true },
+    },
+    {
       name: 'booking.dlq',
       type: 'topic',
       options: { durable: true },

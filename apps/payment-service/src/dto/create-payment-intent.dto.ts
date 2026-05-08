@@ -10,6 +10,14 @@ export class CreatePaymentIntentDto {
   @IsInt()
   bookingId: number;
 
+  @ApiPropertyOptional({
+    description: 'External booking reference used across service boundaries',
+    example: 'BKG-123456',
+  })
+  @IsString()
+  @IsOptional()
+  bookingReference?: string;
+
   @ApiProperty({
     description: 'User ID',
     example: 456,

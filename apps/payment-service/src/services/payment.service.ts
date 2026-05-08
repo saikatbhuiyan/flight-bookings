@@ -1,6 +1,8 @@
 import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
+import { EventPattern } from '@app/common';
 import { DataSource, FindOptionsWhere, MoreThanOrEqual, Repository } from 'typeorm';
 import { createHash, randomUUID } from 'crypto';
 import { Payment, PaymentStatus } from '../entities/payment.entity';
@@ -36,12 +38,17 @@ export class PaymentService {
     private readonly auditLogRepository: Repository<PaymentAuditLog>,
     private readonly gatewayFactory: PaymentGatewayFactory,
     private readonly eventEmitter: EventEmitter2,
+    private readonly amqpConnection: AmqpConnection,
   ) {}
 
   async createPaymentIntent(dto: CreatePaymentIntentDto, idempotencyKey?: string): Promise<Payment> {
     const safeKey = idempotencyKey || randomUUID();
     const requestHash = this.hashPayload(dto);
     const gateway = this.gatewayFactory.resolve(dto.paymentMethod, dto.gatewayOverride);
+    const paymentMetadata = {
+      ...(dto.metadata || {}),
+      ...(dto.bookingReference ? { bookingReference: dto.bookingReference } : {}),
+    };
 
     try {
       return await this.dataSource.transaction(async (manager) => {
@@ -64,7 +71,7 @@ export class PaymentService {
           amount: dto.amount,
           currency: dto.currency || 'USD',
           paymentMethod: dto.paymentMethod,
-          metadata: dto.metadata,
+          metadata: paymentMetadata,
           gatewayOverride: dto.gatewayOverride,
         });
 
@@ -80,7 +87,7 @@ export class PaymentService {
           clientSecret: gatewayIntent.clientSecret,
           correlationId: safeKey,
           metadata: {
-            ...dto.metadata,
+            ...paymentMetadata,
             gatewayIntentId: gatewayIntent.id,
           },
         });
@@ -135,12 +142,22 @@ export class PaymentService {
     });
 
     try {
-      return await this.dataSource.transaction(async (manager) => {
+      const {
+        payment,
+        confirmationEvent,
+      }: {
+        payment: Payment;
+        confirmationEvent?: {
+          success: boolean;
+          gatewayTransactionId?: string;
+          errorMessage?: string;
+        };
+      } = await this.dataSource.transaction(async (manager) => {
         const scope = `confirm_payment:${paymentId}`;
         const resolution = await this.claimIdempotency<Payment>(manager, scope, safeKey, requestHash);
 
         if (resolution.existingResponse) {
-          return resolution.existingResponse;
+          return { payment: resolution.existingResponse };
         }
 
         const payment = await manager.getRepository(Payment).findOne({ where: { id: paymentId } });
@@ -152,7 +169,7 @@ export class PaymentService {
           [PaymentStatus.CONFIRMED, PaymentStatus.PARTIALLY_REFUNDED, PaymentStatus.REFUNDED].includes(payment.status)
         ) {
           await this.completeIdempotency(manager, resolution.record, payment, 'payment', payment.id);
-          return payment;
+          return { payment };
         }
 
         const gateway = this.gatewayFactory.getByName(payment.gateway);
@@ -190,16 +207,32 @@ export class PaymentService {
           },
         });
 
-        this.eventEmitter.emit(result.success ? 'payment.succeeded' : 'payment.failed', {
-          paymentId: savedPayment.id,
-          bookingId: savedPayment.bookingId,
-          amount: savedPayment.amount,
-          gatewayTransactionId: result.transactionId,
-          errorMessage: result.errorMessage,
+        return {
+          payment: savedPayment,
+          confirmationEvent: {
+            success: result.success,
+            gatewayTransactionId: result.transactionId,
+            errorMessage: result.errorMessage,
+          },
+        };
+      });
+
+      if (confirmationEvent) {
+        this.eventEmitter.emit(confirmationEvent.success ? 'payment.succeeded' : 'payment.failed', {
+          paymentId: payment.id,
+          bookingId: payment.bookingId,
+          bookingReference: this.getBookingReference(payment),
+          amount: payment.amount,
+          gatewayTransactionId: confirmationEvent.gatewayTransactionId,
+          errorMessage: confirmationEvent.errorMessage,
         });
 
-        return savedPayment;
-      });
+        if (confirmationEvent.success) {
+          await this.publishPaymentCompletedEvent(payment, confirmationEvent.gatewayTransactionId);
+        }
+      }
+
+      return payment;
     } catch (error) {
       await this.markIdempotencyAsFailed(`confirm_payment:${paymentId}`, safeKey, error);
       this.logger.error(`Failed to confirm payment ${paymentId}: ${error.message}`, error.stack);
@@ -258,6 +291,40 @@ export class PaymentService {
     payment.status = refundedAmount >= payment.amount ? PaymentStatus.REFUNDED : PaymentStatus.PARTIALLY_REFUNDED;
     payment.refundedAt = refundedAmount >= payment.amount ? new Date() : null;
     return this.paymentRepository.save(payment);
+  }
+
+  private getBookingReference(payment: Payment): string | null {
+    const bookingReference = payment.metadata?.bookingReference;
+
+    return typeof bookingReference === 'string' && bookingReference.trim().length > 0 ? bookingReference : null;
+  }
+
+  private async publishPaymentCompletedEvent(payment: Payment, gatewayTransactionId?: string): Promise<void> {
+    const bookingReference = this.getBookingReference(payment);
+
+    if (!bookingReference) {
+      this.logger.warn(`Skipping payment.completed publish for payment ${payment.id}: missing booking reference`);
+      return;
+    }
+
+    const fallbackTransactionId =
+      typeof payment.metadata?.lastConfirmationResult?.transactionId === 'string'
+        ? payment.metadata.lastConfirmationResult.transactionId
+        : undefined;
+
+    await this.amqpConnection.publish('payment.events', EventPattern.PAYMENT_COMPLETED, {
+      paymentId: payment.id,
+      bookingId: payment.bookingId,
+      bookingReference,
+      userId: payment.userId,
+      amount: payment.amount,
+      currency: payment.currency,
+      gateway: payment.gateway,
+      gatewayPaymentId: payment.gatewayPaymentId,
+      gatewayTransactionId: gatewayTransactionId || fallbackTransactionId,
+      status: payment.status,
+      confirmedAt: payment.confirmedAt?.toISOString() || null,
+    });
   }
 
   async refreshRefundedStatusByGatewayId(gatewayPaymentId: string): Promise<Payment> {

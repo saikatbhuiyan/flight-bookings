@@ -12,6 +12,7 @@ import { SagaState } from './entities/saga-state.entity';
 import { OutboxEvent } from './entities/outbox-event.entity';
 import { LoggingInterceptor } from '@app/common';
 import { BookingController } from './booking/booking.controller';
+import { BookingPaymentHandler } from './booking/booking-payment.handler';
 import { BookingService } from './booking/booking.service';
 import { BookingSagaOrchestrator } from './booking-saga/saga-orchestrator.service';
 import { OutboxService } from './outbox/outbox.service';
@@ -44,6 +45,7 @@ import { paymentProviders } from './payment/payment.providers';
       provide: APP_FILTER,
       useClass: GlobalExceptionFilter,
     },
+    BookingPaymentHandler,
     BookingService,
     BookingSagaOrchestrator,
     OutboxService,

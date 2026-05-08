@@ -59,18 +59,31 @@ export class BookingService {
         throw new BadRequestException('Unauthorized');
       }
 
-      const completedBooking = await this.sagaOrchestrator.completeBooking(bookingId, paymentTransactionId);
-
-      return {
-        bookingId: completedBooking.bookingReference,
-        status: completedBooking.status,
-        paymentStatus: completedBooking.paymentStatus,
-        seatNumbers: completedBooking.seatNumbers,
-        flightNumber: completedBooking.flightNumber,
-      };
+      return this.completeBookingFromPaymentEvent(bookingId, paymentTransactionId);
     } catch (error) {
       throw new BadRequestException(error.message);
     }
+  }
+
+  async completeBookingFromPaymentEvent(bookingId: string, paymentTransactionId: string) {
+    if (!paymentTransactionId) {
+      throw new BadRequestException('Payment transaction ID is required');
+    }
+
+    const booking = await this.bookingRepository.findByReference(bookingId);
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    const completedBooking = await this.sagaOrchestrator.completeBooking(bookingId, paymentTransactionId);
+
+    return {
+      bookingId: completedBooking.bookingReference,
+      status: completedBooking.status,
+      paymentStatus: completedBooking.paymentStatus,
+      seatNumbers: completedBooking.seatNumbers,
+      flightNumber: completedBooking.flightNumber,
+    };
   }
 
   async cancelBooking(bookingId: string, userId: number, reason?: string) {

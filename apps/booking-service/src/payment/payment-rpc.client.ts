@@ -16,6 +16,7 @@ export class PaymentRpcClient implements PaymentClient {
     const payload = {
       dto: {
         bookingId: req.bookingId,
+        bookingReference: req.bookingReference,
         userId: req.userId,
         amount: req.amountCents,
         currency: req.currency,

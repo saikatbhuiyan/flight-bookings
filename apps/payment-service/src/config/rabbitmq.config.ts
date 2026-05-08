@@ -6,10 +6,12 @@ export const rabbitmqConfig: RabbitMQConfig = {
     {
       name: 'payment.events',
       type: 'topic',
+      options: { durable: true },
     },
     {
       name: 'booking.events',
       type: 'topic',
+      options: { durable: true },
     },
   ],
   channels: {
