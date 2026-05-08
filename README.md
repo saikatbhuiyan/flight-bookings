@@ -178,8 +178,19 @@ If you are evaluating the project, these are the fastest places to get signal:
 
 - Top-level `npm run build` targets the default Nest project defined in `nest-cli.json`.
 - Each service has its own `tsconfig.app.json` and can be started independently.
+- Each service now loads its own `apps/<service>/.env` file even when started from the monorepo root.
 - Some lint warnings still exist in older parts of the codebase, but the repo now builds cleanly and the root scripts point at real apps.
-- The payment service supports Stripe now and keeps a PayPal provider stub for future implementation.
+- Stripe is the production-ready payment path in this repo. PayPal is registered but intentionally returns `NotImplemented`.
+
+## Booking Flow Without Payment Service
+
+For local development, `booking-service` can finish the full booking flow without `payment-service`.
+
+- In development, `booking-service` defaults to a local mock payment mode when `PAYMENT_REQUIRED` is not set.
+- You can make that behavior explicit by setting `PAYMENT_REQUIRED=false` in your local `apps/booking-service/.env`.
+- In that mode, `POST /bookings` still runs the booking saga, then auto-confirms the booking with a generated local transaction id.
+- The response includes `paymentRequired`, `autoCompleted`, and `payment.provider` so the caller can tell whether the booking used the real payment-service or the local mock path.
+- To test the real RMQ payment path locally, set `PAYMENT_REQUIRED=true` in `apps/booking-service/.env` and start `payment-service`.
 
 ## Current Status
 
@@ -403,7 +414,7 @@ npm run migration:revert:booking
 | **RabbitMQ** |
 | RABBITMQ_URL | RabbitMQ URL | amqp://admin:admin@rabbitmq:5672 |
 | **Booking/Payment** |
-| PAYMENT_REQUIRED | If false, booking auto-completes with mock payment | true |
+| PAYMENT_REQUIRED | If false, booking auto-completes with mock payment. If unset, development defaults to local mock and production defaults to real payment-service. | false in local dev |
 | PAYMENT_QUEUE | RMQ queue name for payment-service RPC | payment_queue |
 | **JWT** |
 | JWT_ACCESS_SECRET | JWT access secret | (required) |
@@ -747,13 +758,21 @@ npm run start:payment
 
 #### Running locally without `payment-service`
 
-If you want to test the full booking flow without starting `payment-service`, set:
+Set this in your local `apps/booking-service/.env` if you want to skip `payment-service`:
 
 ```bash
 PAYMENT_REQUIRED=false
 ```
 
-in `apps/booking-service/.env` and start `booking-service` normally.
+Start `booking-service` normally and booking creation will auto-complete after the saga finishes.
+
+If you want to switch back to the real payment-service path, set:
+
+```bash
+PAYMENT_REQUIRED=true
+```
+
+and start `payment-service` as well.
 
 ### Docker Development
 
@@ -873,18 +892,11 @@ booking-service:
 
 This project is licensed under the MIT License.
 
-## 👥 Support
-
-For support, email support@flightbooking.com or open an issue in the repository.
-
 ## 🎯 Roadmap
 
 ### Short Term
-- [ ] Payment gateway integration (Stripe/PayPal)
 - [ ] Email templates with SendGrid
 - [ ] SMS integration with Twilio
-- [ ] Admin dashboard
-- [ ] Enhanced seat selection UI
 
 ### Medium Term
 - [ ] Flight tracking and status updates
