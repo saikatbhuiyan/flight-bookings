@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotImplementedException } from '@nestjs/common';
 import {
   IPaymentGateway,
   PaymentMethod,
@@ -38,29 +38,27 @@ export class PayPalGatewayProvider implements IPaymentGateway {
 
   createPaymentIntent(params: CreatePaymentIntentParams): Promise<PaymentIntent> {
     this.logger.log(`Creating PayPal order for booking ${params.bookingId}`);
-
-    throw new Error(
-      'PayPal gateway is not implemented yet. Use Stripe for now or implement PayPal Orders v2 integration.',
-    );
+    return this.unsupported('createPaymentIntent');
   }
 
   capturePayment(gatewayPaymentId: string): Promise<PaymentResult> {
     this.logger.log(`Capturing PayPal order: ${gatewayPaymentId}`);
-
-    throw new Error('PayPal capturePayment not yet implemented');
+    return this.unsupported('capturePayment');
   }
 
   refundPayment(params: RefundParams): Promise<RefundResult> {
     this.logger.log(`Creating PayPal refund for ${params.transactionId}`);
-
-    throw new Error('PayPal refundPayment not yet implemented');
+    return this.unsupported('refundPayment');
   }
 
   verifyWebhook(payload: any, signature: string): Promise<WebhookEvent> {
     this.logger.log('Verifying PayPal webhook signature');
     void payload;
     void signature;
+    return this.unsupported('verifyWebhook');
+  }
 
-    throw new Error('PayPal verifyWebhook not yet implemented');
+  private unsupported(operation: string): never {
+    throw new NotImplementedException(`PayPal ${operation} is not available yet. Use Stripe or add PayPal Orders v2.`);
   }
 }
