@@ -193,3 +193,8 @@ This keeps the service ready for downstream settlement, revenue recognition, and
 3. Add Redis lock and rate limiting for refund and confirmation hotspots.
 4. Add finance-facing exports and dashboard queries.
 5. Add chargeback lifecycle support.
+
+## Booking integration (current state)
+
+- `booking-service` creates payment intents via RabbitMQ RPC (`payment.create_intent`).
+- For local development, `booking-service` can bypass payment by setting `PAYMENT_REQUIRED=false`.

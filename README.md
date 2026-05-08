@@ -166,7 +166,7 @@ A production-grade, scalable microservices architecture for flight booking built
 
 #### 4. Booking Service (Port 3003)
 - Booking creation and management
-- Payment integration (simulated)
+- Payment intent creation via RabbitMQ (optional local fallback)
 - Booking cancellation
 - User booking history
 - Event emission for notifications
@@ -177,6 +177,11 @@ A production-grade, scalable microservices architecture for flight booking built
 - Event-driven architecture
 - Booking confirmation emails
 - Cancellation notifications
+
+#### 6. Payment Service (Port 3005)
+- Payment intent creation and confirmation
+- Idempotency keys and audit logs
+- Refunds and ledger entries
 
 ## 📊 Infrastructure Services
 
@@ -248,6 +253,7 @@ npm run start:auth
 npm run start:flight
 npm run start:booking
 npm run start:notification
+npm run start:payment
 ```
 
 ## 🐳 Docker Deployment
@@ -461,6 +467,9 @@ npm run migration:revert:booking
 | REDIS_PORT | Redis port | 6379 |
 | **RabbitMQ** |
 | RABBITMQ_URL | RabbitMQ URL | amqp://admin:admin@rabbitmq:5672 |
+| **Booking/Payment** |
+| PAYMENT_REQUIRED | If false, booking auto-completes with mock payment | true |
+| PAYMENT_QUEUE | RMQ queue name for payment-service RPC | payment_queue |
 | **JWT** |
 | JWT_ACCESS_SECRET | JWT access secret | (required) |
 | JWT_REFRESH_SECRET | JWT refresh secret | (required) |
@@ -798,7 +807,18 @@ npm run start:auth
 npm run start:flight
 npm run start:booking
 npm run start:notification
+npm run start:payment
 ```
+
+#### Running locally without `payment-service`
+
+If you want to test the full booking flow without starting `payment-service`, set:
+
+```bash
+PAYMENT_REQUIRED=false
+```
+
+in `apps/booking-service/.env` and start `booking-service` normally.
 
 ### Docker Development
 
