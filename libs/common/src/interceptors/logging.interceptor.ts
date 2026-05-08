@@ -64,10 +64,10 @@ export class LoggingInterceptor implements NestInterceptor {
     let url = 'UNKNOWN';
     let ip = 'UNKNOWN';
     let userAgent = '';
-    let correlationId = randomUUID();
+    let correlationId: string = randomUUID();
     let requestBody: unknown = {};
     let requestHeaders: Record<string, unknown> = {};
-    let traceId = correlationId;
+    let traceId: string = correlationId;
     let contentLength: string | string[] | undefined;
 
     try {
