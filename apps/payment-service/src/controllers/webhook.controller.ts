@@ -2,6 +2,7 @@ import { Controller, Post, Req, Headers, RawBodyRequest, Logger, BadRequestExcep
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Request } from 'express';
 import { WebhookService } from '../services/webhook.service';
+import { successResponse } from '@app/common';
 
 @ApiTags('Webhooks')
 @Controller('webhooks')
@@ -26,7 +27,7 @@ export class WebhookController {
 
     await this.webhookService.handleStripeWebhook(payload, signature);
 
-    return { received: true };
+    return successResponse('webhook.stripe.success', { received: true });
   }
 
   @Post('paypal')
@@ -47,6 +48,6 @@ export class WebhookController {
 
     await this.webhookService.handlePayPalWebhook(payload, signature);
 
-    return { received: true };
+    return successResponse('webhook.paypal.success', { received: true });
   }
 }

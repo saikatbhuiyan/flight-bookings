@@ -61,7 +61,7 @@ describe('AuthMessageController', () => {
           firstName: 'Jane',
           lastName: 'Doe',
         },
-        'User registered successfully',
+        'user.create.success',
       ),
     );
   });
@@ -149,10 +149,7 @@ describe('AuthMessageController', () => {
         clientType: undefined,
       }),
     ).resolves.toEqual(
-      ApiResponseDto.success(
-        { accessToken: 'next-access', refreshToken: 'next-refresh' },
-        'Token refreshed successfully',
-      ),
+      ApiResponseDto.success({ accessToken: 'next-access', refreshToken: 'next-refresh' }, 'auth.refresh.success'),
     );
   });
 

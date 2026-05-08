@@ -9,14 +9,24 @@ import {
   Query,
   HttpStatus,
   Inject,
-  HttpException,
   ParseIntPipe,
   HttpCode,
+  Logger,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
-import { MessagePattern as MP, Public, Roles, Role, CreateCityDto, UpdateCityDto, QueryCityDto } from '@app/common';
+import {
+  MessagePattern as MP,
+  Public,
+  Roles,
+  Role,
+  CreateCityDto,
+  UpdateCityDto,
+  QueryCityDto,
+  ApiResponseDto,
+  createHttpExceptionFromRpcError,
+} from '@app/common';
 
 /**
  * API Gateway controller for City operations
@@ -25,6 +35,8 @@ import { MessagePattern as MP, Public, Roles, Role, CreateCityDto, UpdateCityDto
 @ApiTags('Cities')
 @Controller('cities')
 export class CityController {
+  private readonly logger = new Logger(CityController.name);
+
   constructor(@Inject('FLIGHT_SERVICE') private readonly flightClient: ClientProxy) {}
 
   @Post()
@@ -36,7 +48,8 @@ export class CityController {
     description: 'City created successfully',
   })
   async create(@Body() createCityDto: CreateCityDto) {
-    return this.callService(MP.CITY_CREATE, createCityDto);
+    const result = await this.callService(MP.CITY_CREATE, createCityDto);
+    return ApiResponseDto.success(result, 'city.create.success');
   }
 
   @Get()
@@ -47,7 +60,8 @@ export class CityController {
     description: 'Cities retrieved successfully',
   })
   async findAll(@Query() queryDto: QueryCityDto) {
-    return this.callService(MP.CITY_FIND_ALL, queryDto);
+    const result = await this.callService(MP.CITY_FIND_ALL, queryDto);
+    return ApiResponseDto.success(result, 'city.list.success');
   }
 
   @Get('statistics')
@@ -55,7 +69,8 @@ export class CityController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get city statistics' })
   async getStatistics() {
-    return this.callService(MP.CITY_STATISTICS, {});
+    const result = await this.callService(MP.CITY_STATISTICS, {});
+    return ApiResponseDto.success(result, 'city.statistics.success');
   }
 
   @Get(':id')
@@ -67,7 +82,8 @@ export class CityController {
     description: 'City retrieved successfully',
   })
   async findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.callService(MP.CITY_FIND_BY_ID, { id });
+    const result = await this.callService(MP.CITY_FIND_BY_ID, { id });
+    return ApiResponseDto.success(result, 'city.get.success');
   }
 
   @Patch(':id')
@@ -76,7 +92,8 @@ export class CityController {
   @ApiOperation({ summary: 'Update city' })
   @ApiParam({ name: 'id', description: 'City ID' })
   async update(@Param('id', ParseIntPipe) id: number, @Body() updateCityDto: UpdateCityDto) {
-    return this.callService(MP.CITY_UPDATE, { id, updateCityDto });
+    const result = await this.callService(MP.CITY_UPDATE, { id, updateCityDto });
+    return ApiResponseDto.success(result, 'city.update.success');
   }
 
   @Delete(':id')
@@ -86,17 +103,16 @@ export class CityController {
   @ApiOperation({ summary: 'Delete city' })
   @ApiParam({ name: 'id', description: 'City ID' })
   async remove(@Param('id', ParseIntPipe) id: number) {
-    return this.callService(MP.CITY_DELETE, { id });
+    await this.callService(MP.CITY_DELETE, { id });
+    return ApiResponseDto.success(null, 'city.delete.success');
   }
 
   private async callService<T>(pattern: string, data: any): Promise<T> {
     try {
       return await firstValueFrom(this.flightClient.send<T>(pattern, data));
     } catch (error) {
-      const rpcError = error;
-      const status = rpcError.statusCode || rpcError.status || HttpStatus.INTERNAL_SERVER_ERROR;
-      const message = rpcError.message || 'Internal server error';
-      throw new HttpException(message, status);
+      this.logger.error(`Error calling ${pattern}`, JSON.stringify(error, null, 2));
+      throw createHttpExceptionFromRpcError(error);
     }
   }
 }

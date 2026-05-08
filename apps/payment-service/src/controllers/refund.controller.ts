@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { RefundService } from '../services/refund.service';
 import { CreateRefundDto } from '../dto/create-refund.dto';
+import { successResponse } from '@app/common';
 
 @ApiTags('Refunds')
 @Controller('refunds')
@@ -17,14 +18,16 @@ export class RefundController {
   @ApiResponse({ status: 400, description: 'Invalid request' })
   async createRefund(@Body() dto: CreateRefundDto, @Headers('idempotency-key') idempotencyKey?: string) {
     this.logger.log(`Creating refund for payment ${dto.paymentId}`);
-    return this.refundService.createRefund(dto, idempotencyKey);
+    const result = await this.refundService.createRefund(dto, idempotencyKey);
+    return successResponse('refund.create.success', result);
   }
 
   @Get()
   @ApiOperation({ summary: 'Get refunds by booking ID' })
   @ApiResponse({ status: 200, description: 'Refunds found' })
   async getRefundsByBooking(@Query('bookingId') bookingId: number) {
-    return this.refundService.getRefundsByBooking(bookingId);
+    const result = await this.refundService.getRefundsByBooking(bookingId);
+    return successResponse('refund.list.success', result);
   }
 
   @MessagePattern('payment.create_refund')

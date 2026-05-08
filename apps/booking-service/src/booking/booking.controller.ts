@@ -1,10 +1,17 @@
 import { Controller, Post, Get, Put, Body, Param, Query, Req, HttpStatus } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import { MessagePattern as MP } from '@app/common';
+import { MessagePattern as MP, successResponse } from '@app/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { BookingService } from './booking.service';
 import { CreateBookingDto } from '../booking-saga/saga-orchestrator.service';
 import { RateLimit } from '@app/rate-limiter';
+import { Request } from 'express';
+
+interface AuthenticatedRequest extends Request {
+  user: {
+    id: number;
+  };
+}
 
 @ApiTags('Bookings')
 @Controller('bookings')
@@ -18,15 +25,9 @@ export class BookingController {
   @ApiResponse({ status: HttpStatus.CREATED, description: 'Booking initiated successfully' })
   @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Invalid input' })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
-  async createBooking(@Body() dto: CreateBookingDto, @Req() req: any) {
+  async createBooking(@Body() dto: CreateBookingDto, @Req() req: AuthenticatedRequest) {
     const data = await this.bookingService.createBooking(dto, req.user.id);
-    return {
-      success: true,
-      message: data.paymentRequired
-        ? 'Booking initiated successfully. Please complete payment within 15 minutes.'
-        : 'Booking completed successfully (local payment disabled).',
-      data,
-    };
+    return successResponse('booking.create.success', data);
   }
 
   /**
@@ -40,14 +41,10 @@ export class BookingController {
   async completeBooking(
     @Param('bookingId') bookingId: string,
     @Body() paymentDto: { paymentTransactionId: string },
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.bookingService.completeBooking(bookingId, req.user.id, paymentDto.paymentTransactionId);
-    return {
-      success: true,
-      message: 'Booking confirmed successfully!',
-      data,
-    };
+    return successResponse('booking.confirm.success', data);
   }
 
   /**
@@ -58,13 +55,13 @@ export class BookingController {
   @ApiOperation({ summary: 'Cancel a booking' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Booking cancelled successfully' })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Booking not found' })
-  async cancelBooking(@Param('bookingId') bookingId: string, @Body() cancelDto: { reason?: string }, @Req() req: any) {
+  async cancelBooking(
+    @Param('bookingId') bookingId: string,
+    @Body() cancelDto: { reason?: string },
+    @Req() req: AuthenticatedRequest,
+  ) {
     const data = await this.bookingService.cancelBooking(bookingId, req.user.id, cancelDto.reason);
-    return {
-      success: true,
-      message: 'Booking cancelled successfully',
-      data,
-    };
+    return successResponse('booking.cancel.success', data);
   }
 
   /**
@@ -75,13 +72,9 @@ export class BookingController {
   @ApiOperation({ summary: 'Extend booking expiry time' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Booking extended successfully' })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Booking not found' })
-  async extendBooking(@Param('bookingId') bookingId: string, @Req() req: any) {
+  async extendBooking(@Param('bookingId') bookingId: string, @Req() req: AuthenticatedRequest) {
     const data = await this.bookingService.extendBooking(bookingId, req.user.id);
-    return {
-      success: true,
-      message: 'Booking extended by 5 minutes',
-      data,
-    };
+    return successResponse('booking.extend.success', data);
   }
 
   /**
@@ -89,12 +82,9 @@ export class BookingController {
    */
   @Get('my-bookings')
   @ApiOperation({ summary: 'Get current user bookings' })
-  async getMyBookings(@Req() req: any, @Query('status') status?: string) {
+  async getMyBookings(@Req() req: AuthenticatedRequest, @Query('status') status?: string) {
     const data = await this.bookingService.getMyBookings(req.user.id, status);
-    return {
-      success: true,
-      data,
-    };
+    return successResponse('booking.list.success', data);
   }
 
   /**
@@ -102,12 +92,9 @@ export class BookingController {
    */
   @Get(':bookingId')
   @ApiOperation({ summary: 'Get booking by ID' })
-  async getBooking(@Param('bookingId') bookingId: string, @Req() req: any) {
+  async getBooking(@Param('bookingId') bookingId: string, @Req() req: AuthenticatedRequest) {
     const data = await this.bookingService.getBooking(bookingId, req.user.id);
-    return {
-      success: true,
-      data,
-    };
+    return successResponse('booking.get.success', data);
   }
 
   /**
@@ -117,10 +104,7 @@ export class BookingController {
   @ApiOperation({ summary: 'Check if seats are available' })
   async checkSeatAvailability(@Param('flightId') flightId: number, @Query('seats') seats: string) {
     const data = await this.bookingService.checkSeatAvailability(flightId, seats);
-    return {
-      success: true,
-      data,
-    };
+    return successResponse('booking.availability.success', data);
   }
 
   // ============================================

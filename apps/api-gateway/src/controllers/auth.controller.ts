@@ -10,7 +10,7 @@ import {
   UseGuards,
   Get,
   BadRequestException,
-  HttpException,
+  Logger,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
@@ -22,6 +22,7 @@ import {
   ClientType,
   CookieService,
   JwtAuthGuard,
+  createHttpExceptionFromRpcError,
 } from '@app/common';
 import type { Request, Response } from 'express';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -37,6 +38,8 @@ interface AuthTokens {
 @RateLimit({ points: 5, duration: 60 })
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
+
   constructor(
     @Inject('AUTH_SERVICE') private readonly authClient: ClientProxy,
     private readonly cookieService: CookieService,
@@ -55,7 +58,7 @@ export class AuthController {
   @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Invalid input' })
   async register(@Body() registerDto: RegisterDto) {
     const result = await this.callService(MP.AUTH_REGISTER, registerDto);
-    return ApiResponseDto.success(result, 'User registered successfully');
+    return ApiResponseDto.success(result, 'user.create.success');
   }
 
   // --- LOGIN ------------------------------------------------------
@@ -83,10 +86,10 @@ export class AuthController {
     if (clientType === ClientType.WEB) {
       this.cookieService.setAccessToken(res, result.accessToken, deviceId);
       this.cookieService.setRefreshToken(res, result.refreshToken, deviceId);
-      return ApiResponseDto.success(null, 'Login successful');
+      return ApiResponseDto.success(null, 'auth.login.success');
     }
 
-    return ApiResponseDto.success(result, 'Login successful');
+    return ApiResponseDto.success(result, 'auth.login.success');
   }
 
   // --- REFRESH TOKEN ---------------------------------------------
@@ -113,7 +116,11 @@ export class AuthController {
     const refreshToken =
       clientType === ClientType.WEB ? req.cookies[`refreshToken_${deviceId}`] : refreshTokenDto.refreshToken;
 
-    if (!refreshToken) throw new BadRequestException('Missing refresh token');
+    if (!refreshToken) {
+      throw new BadRequestException({
+        code: 'auth.token.missing',
+      });
+    }
 
     const result = await this.callAuthService(MP.AUTH_REFRESH, {
       ...refreshTokenDto,
@@ -123,10 +130,10 @@ export class AuthController {
     if (clientType === ClientType.WEB) {
       this.cookieService.setAccessToken(res, result.accessToken, deviceId);
       this.cookieService.setRefreshToken(res, result.refreshToken, deviceId);
-      return ApiResponseDto.success(null, 'Token refreshed successfully');
+      return ApiResponseDto.success(null, 'auth.refresh.success');
     }
 
-    return ApiResponseDto.success(result, 'Token refreshed successfully');
+    return ApiResponseDto.success(result, 'auth.refresh.success');
   }
 
   // --- SIGN OUT ---------------------------------------------------
@@ -148,7 +155,7 @@ export class AuthController {
       this.cookieService.clearAuthCookies(res, deviceId);
     }
 
-    return ApiResponseDto.success(null, 'Logged out successfully');
+    return ApiResponseDto.success(null, 'auth.logout.success');
   }
 
   // --- CURRENT USER ----------------------------------------------
@@ -163,7 +170,7 @@ export class AuthController {
   })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
   getProfile(@CurrentUser() user: any) {
-    return ApiResponseDto.success(user, 'Profile retrieved successfully');
+    return ApiResponseDto.success(user, 'auth.profile.success');
   }
 
   // --- Helper -----------------------------------------------------
@@ -171,41 +178,8 @@ export class AuthController {
     try {
       return await firstValueFrom(this.authClient.send<T>(pattern, data));
     } catch (error) {
-      const rpcError = error;
-      console.error(`[Gateway] Error calling ${pattern}:`, JSON.stringify(rpcError, null, 2));
-
-      // Extract status: handle numeric and standard RMQ status formats
-      let status = HttpStatus.INTERNAL_SERVER_ERROR;
-
-      // Look for status in common locations
-      if (typeof rpcError.status === 'number') {
-        status = rpcError.status;
-      } else if (typeof rpcError.statusCode === 'number') {
-        status = rpcError.statusCode;
-      } else if (rpcError.response?.status && typeof rpcError.response.status === 'number') {
-        status = rpcError.response.status;
-      } else if (rpcError.response?.statusCode && typeof rpcError.response.statusCode === 'number') {
-        status = rpcError.response.statusCode;
-      }
-
-      // Extract message: handle string, array, or nested object formats
-      let message = 'Internal server error';
-      if (typeof rpcError.message === 'string') {
-        message = rpcError.message;
-      } else if (typeof rpcError.response === 'string') {
-        message = rpcError.response;
-      } else if (rpcError.response && typeof rpcError.response === 'object') {
-        const res = rpcError.response;
-        message = res.message || res.error || JSON.stringify(res);
-      } else if (rpcError.message && typeof rpcError.message === 'object') {
-        const msg = rpcError.message;
-        message = msg.message || msg.error || JSON.stringify(msg);
-      } else if (rpcError.error && typeof rpcError.error === 'string') {
-        message = rpcError.error;
-      }
-
-      console.log(`[Gateway] Extracted status: ${status}, message: ${message}`);
-      throw new HttpException(message, status);
+      this.logger.error(`Error calling ${pattern}`, JSON.stringify(error, null, 2));
+      throw createHttpExceptionFromRpcError(error);
     }
   }
 

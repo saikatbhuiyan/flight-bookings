@@ -55,7 +55,7 @@ describe('GlobalExceptionFilter', () => {
     expect(filter).toBeDefined();
   });
 
-  it('should handle HttpException and add errorCode', () => {
+  it('should handle HttpException and add code', () => {
     const exception = new HttpException('Not Found', HttpStatus.NOT_FOUND);
 
     filter.catch(exception, mockArgumentsHost);
@@ -66,12 +66,13 @@ describe('GlobalExceptionFilter', () => {
         success: false,
         statusCode: 404,
         message: 'Not Found',
-        errorCode: 'ERR_NOT_FOUND',
+        code: 'resource.not_found',
+        errorCode: 'resource.not_found',
       }),
     );
   });
 
-  it('should handle QueryFailedError and add errorCode', () => {
+  it('should handle QueryFailedError and add code', () => {
     const exception = new QueryFailedError('query', [], new Error('driver error'));
     (exception as any).code = '23505';
 
@@ -81,7 +82,8 @@ describe('GlobalExceptionFilter', () => {
     expect(mockResponse.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: false,
-        errorCode: 'ERR_DUPLICATE_ENTRY',
+        code: 'database.duplicate_entry',
+        errorCode: 'database.duplicate_entry',
       }),
     );
   });
@@ -93,7 +95,7 @@ describe('GlobalExceptionFilter', () => {
     filter.catch(exception, mockArgumentsHost);
 
     const jsonResponse = mockResponse.json.mock.calls[0][0];
-    expect(jsonResponse.message).toBe('An unexpected error occurred. Please try again later.');
+    expect(jsonResponse.message).toBe('Something went wrong');
     expect(jsonResponse.errors).toBeUndefined();
 
     process.env.NODE_ENV = 'test'; // Reset

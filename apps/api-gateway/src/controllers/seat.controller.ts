@@ -1,23 +1,23 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Param,
-  Delete,
-  HttpStatus,
-  Inject,
-  HttpException,
-  ParseIntPipe,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Inject, ParseIntPipe, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { MessagePattern as MP, Public, Roles, Role, CreateSeatDto, BulkCreateSeatsDto } from '@app/common';
+import {
+  MessagePattern as MP,
+  Public,
+  Roles,
+  Role,
+  CreateSeatDto,
+  BulkCreateSeatsDto,
+  ApiResponseDto,
+  createHttpExceptionFromRpcError,
+} from '@app/common';
 
 @ApiTags('Seats')
 @Controller('seats')
 export class SeatController {
+  private readonly logger = new Logger(SeatController.name);
+
   constructor(@Inject('FLIGHT_SERVICE') private readonly flightClient: ClientProxy) {}
 
   @Post()
@@ -25,7 +25,8 @@ export class SeatController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new seat' })
   async create(@Body() createSeatDto: CreateSeatDto) {
-    return this.callService(MP.SEAT_CREATE, createSeatDto);
+    const result = await this.callService(MP.SEAT_CREATE, createSeatDto);
+    return ApiResponseDto.success(result, 'seat.create.success');
   }
 
   @Post('bulk')
@@ -33,14 +34,16 @@ export class SeatController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Bulk create seats for an airplane' })
   async bulkCreate(@Body() bulkDto: BulkCreateSeatsDto) {
-    return this.callService(MP.SEAT_BULK_CREATE, bulkDto);
+    const result = await this.callService(MP.SEAT_BULK_CREATE, bulkDto);
+    return ApiResponseDto.success(result, 'seat.bulk_create.success');
   }
 
   @Get('airplane/:airplaneId')
   @Public()
   @ApiOperation({ summary: 'Get all seats for an airplane' })
   async findByAirplane(@Param('airplaneId', ParseIntPipe) airplaneId: number) {
-    return this.callService(MP.AIRPLANE_GET_SEATS, { airplaneId });
+    const result = await this.callService(MP.AIRPLANE_GET_SEATS, { airplaneId });
+    return ApiResponseDto.success(result, 'seat.list.success');
   }
 
   @Delete(':id')
@@ -48,17 +51,16 @@ export class SeatController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete a seat' })
   async remove(@Param('id', ParseIntPipe) id: number) {
-    return this.callService(MP.SEAT_DELETE, { id });
+    await this.callService(MP.SEAT_DELETE, { id });
+    return ApiResponseDto.success(null, 'seat.delete.success');
   }
 
   private async callService<T>(pattern: string, data: any): Promise<T> {
     try {
       return await firstValueFrom(this.flightClient.send<T>(pattern, data));
     } catch (error) {
-      const rpcError = error;
-      const status = rpcError.statusCode || rpcError.status || HttpStatus.INTERNAL_SERVER_ERROR;
-      const message = rpcError.message || 'Internal server error';
-      throw new HttpException(message, status);
+      this.logger.error(`Error calling ${pattern}`, JSON.stringify(error, null, 2));
+      throw createHttpExceptionFromRpcError(error);
     }
   }
 }

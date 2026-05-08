@@ -5,6 +5,7 @@ import { PaymentService } from '../services/payment.service';
 import { CreatePaymentIntentDto } from '../dto/create-payment-intent.dto';
 import { ConfirmPaymentIntentDto } from '../dto/confirm-payment-intent.dto';
 import { QueryLedgerEntriesDto } from '../dto/query-ledger-entries.dto';
+import { successResponse } from '@app/common';
 
 type CreatePaymentIntentMessage =
   | CreatePaymentIntentDto
@@ -26,7 +27,8 @@ export class PaymentIntentController {
   @ApiResponse({ status: 400, description: 'Invalid request' })
   async createPaymentIntent(@Body() dto: CreatePaymentIntentDto, @Headers('idempotency-key') idempotencyKey?: string) {
     this.logger.log(`Creating payment intent for booking ${dto.bookingId}`);
-    return this.paymentService.createPaymentIntent(dto, idempotencyKey);
+    const result = await this.paymentService.createPaymentIntent(dto, idempotencyKey);
+    return successResponse('payment.intent.create.success', result);
   }
 
   @Post(':id/confirm')
@@ -38,7 +40,8 @@ export class PaymentIntentController {
     @Body() dto: ConfirmPaymentIntentDto,
     @Headers('idempotency-key') idempotencyKey?: string,
   ) {
-    return this.paymentService.confirmPaymentIntent(id, dto, idempotencyKey);
+    const result = await this.paymentService.confirmPaymentIntent(id, dto, idempotencyKey);
+    return successResponse('payment.intent.confirm.success', result);
   }
 
   @Get(':id')
@@ -46,7 +49,8 @@ export class PaymentIntentController {
   @ApiResponse({ status: 200, description: 'Payment intent found' })
   @ApiResponse({ status: 404, description: 'Payment intent not found' })
   async getPaymentIntent(@Param('id') id: string) {
-    return this.paymentService.getPaymentIntent(id);
+    const result = await this.paymentService.getPaymentIntent(id);
+    return successResponse('payment.intent.get.success', result);
   }
 
   @Get('booking/:bookingId')
@@ -54,14 +58,16 @@ export class PaymentIntentController {
   @ApiResponse({ status: 200, description: 'Payment intent found' })
   @ApiResponse({ status: 404, description: 'Payment intent not found' })
   async getPaymentIntentByBooking(@Param('bookingId') bookingId: number) {
-    return this.paymentService.getPaymentIntentByBooking(bookingId);
+    const result = await this.paymentService.getPaymentIntentByBooking(bookingId);
+    return successResponse('payment.intent.get.success', result);
   }
 
   @Get('/ledger/entries')
   @ApiOperation({ summary: 'Query ledger entries for reporting and reconciliation' })
   @ApiResponse({ status: 200, description: 'Ledger entries returned successfully' })
   async getLedgerEntries(@Query() query: QueryLedgerEntriesDto) {
-    return this.paymentService.getLedgerEntries(query);
+    const result = await this.paymentService.getLedgerEntries(query);
+    return successResponse('payment.intent.ledger.success', result);
   }
 
   @MessagePattern('payment.create_intent')

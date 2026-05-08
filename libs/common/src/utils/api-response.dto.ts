@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { resolveMessage } from '../messages';
 
 export class ApiResponseDto<T> {
   @ApiProperty({
@@ -16,6 +17,12 @@ export class ApiResponseDto<T> {
   })
   message?: string;
 
+  @ApiPropertyOptional({
+    example: 'auth.login.success',
+    description: 'Stable machine-readable response code',
+  })
+  code?: string;
+
   @ApiPropertyOptional({ description: 'Error details if success is false' })
   errors?: any[];
 
@@ -28,20 +35,31 @@ export class ApiResponseDto<T> {
     Object.assign(this, partial);
   }
 
-  static success<T>(data: T, message?: string): ApiResponseDto<T> {
+  static success<T>(data: T, codeOrMessage?: string): ApiResponseDto<T> {
+    const resolved = codeOrMessage ? resolveMessage(codeOrMessage) : undefined;
+
     return new ApiResponseDto<T>({
       success: true,
       data,
-      message,
+      code: resolved?.code,
+      message: resolved?.message,
     });
   }
 
-  static error(message: string, errors?: any[]): ApiResponseDto<null> {
+  static error(
+    codeOrMessage: string,
+    errors?: any[],
+    statusCode?: number,
+  ): ApiResponseDto<null> & { statusCode?: number } {
+    const resolved = resolveMessage(codeOrMessage);
+
     return new ApiResponseDto<null>({
       success: false,
-      message,
+      code: resolved.code,
+      message: resolved.message,
       errors,
-    });
+      ...(statusCode !== undefined && { statusCode }),
+    }) as ApiResponseDto<null> & { statusCode?: number };
   }
 
   static paginated<T>(data: T[], page: number, limit: number, total: number): ApiResponseDto<T[]> {

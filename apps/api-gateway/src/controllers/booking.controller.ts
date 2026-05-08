@@ -1,19 +1,14 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Body,
-  Param,
-  Query,
-  HttpStatus,
-  Inject,
-  HttpException,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param, Query, HttpStatus, Inject, Logger, UseGuards } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
-import { MessagePattern as MP, ApiResponseDto, CreateBookingDto, CurrentUser, JwtAuthGuard } from '@app/common';
+import {
+  MessagePattern as MP,
+  ApiResponseDto,
+  CreateBookingDto,
+  CurrentUser,
+  JwtAuthGuard,
+  createHttpExceptionFromRpcError,
+} from '@app/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags, ApiParam } from '@nestjs/swagger';
 
 @ApiTags('Bookings')
@@ -21,6 +16,8 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags, ApiParam } from '@ne
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class BookingController {
+  private readonly logger = new Logger(BookingController.name);
+
   constructor(@Inject('BOOKING_SERVICE') private readonly bookingClient: ClientProxy) {}
 
   @Post()
@@ -35,7 +32,7 @@ export class BookingController {
       ...createDto,
       userId: user.id,
     });
-    return ApiResponseDto.success(result, 'Booking initiated successfully');
+    return ApiResponseDto.success(result, 'booking.create.success');
   }
 
   @Post(':bookingId/complete')
@@ -50,7 +47,7 @@ export class BookingController {
       userId: user.id,
       paymentTransactionId: paymentDto.paymentTransactionId,
     });
-    return ApiResponseDto.success(result, 'Booking confirmed successfully');
+    return ApiResponseDto.success(result, 'booking.confirm.success');
   }
 
   @Put(':bookingId/cancel')
@@ -65,7 +62,7 @@ export class BookingController {
       userId: user.id,
       reason: cancelDto.reason,
     });
-    return ApiResponseDto.success(result, 'Booking cancelled successfully');
+    return ApiResponseDto.success(result, 'booking.cancel.success');
   }
 
   @Put(':bookingId/extend')
@@ -75,7 +72,7 @@ export class BookingController {
       bookingId,
       userId: user.id,
     });
-    return ApiResponseDto.success(result, 'Booking extended successfully');
+    return ApiResponseDto.success(result, 'booking.extend.success');
   }
 
   @Get('my-bookings')
@@ -84,7 +81,7 @@ export class BookingController {
     const result = await this.callService(MP.BOOKING_FIND_BY_USER, {
       userId: user.id,
     });
-    return ApiResponseDto.success(result, 'Bookings retrieved successfully');
+    return ApiResponseDto.success(result, 'booking.list.success');
   }
 
   @Get(':bookingId')
@@ -95,7 +92,7 @@ export class BookingController {
       bookingId,
       userId: user.id,
     });
-    return ApiResponseDto.success(result, 'Booking retrieved successfully');
+    return ApiResponseDto.success(result, 'booking.get.success');
   }
 
   @Get('flights/:flightId/seats/availability')
@@ -105,48 +102,15 @@ export class BookingController {
       flightId,
       seats,
     });
-    return ApiResponseDto.success(result, 'Availability checked successfully');
+    return ApiResponseDto.success(result, 'booking.availability.success');
   }
 
   private async callService<T>(pattern: string, data: any): Promise<T> {
     try {
       return await firstValueFrom(this.bookingClient.send<T>(pattern, data));
     } catch (error) {
-      const rpcError = error;
-      console.error(`[Gateway] Error calling ${pattern}:`, JSON.stringify(rpcError, null, 2));
-
-      // Extract status: handle numeric and standard RMQ status formats
-      let status = HttpStatus.INTERNAL_SERVER_ERROR;
-
-      // Look for status in common locations
-      if (typeof rpcError.status === 'number') {
-        status = rpcError.status;
-      } else if (typeof rpcError.statusCode === 'number') {
-        status = rpcError.statusCode;
-      } else if (rpcError.response?.status && typeof rpcError.response.status === 'number') {
-        status = rpcError.response.status;
-      } else if (rpcError.response?.statusCode && typeof rpcError.response.statusCode === 'number') {
-        status = rpcError.response.statusCode;
-      }
-
-      // Extract message: handle string, array, or nested object formats
-      let message = 'Internal server error';
-      if (typeof rpcError.message === 'string') {
-        message = rpcError.message;
-      } else if (typeof rpcError.response === 'string') {
-        message = rpcError.response;
-      } else if (rpcError.response && typeof rpcError.response === 'object') {
-        const res = rpcError.response;
-        message = res.message || res.error || JSON.stringify(res);
-      } else if (rpcError.message && typeof rpcError.message === 'object') {
-        const msg = rpcError.message;
-        message = msg.message || msg.error || JSON.stringify(msg);
-      } else if (rpcError.error && typeof rpcError.error === 'string') {
-        message = rpcError.error;
-      }
-
-      console.log(`[Gateway] Extracted status: ${status}, message: ${message}`);
-      throw new HttpException(message, status);
+      this.logger.error(`Error calling ${pattern}`, JSON.stringify(error, null, 2));
+      throw createHttpExceptionFromRpcError(error);
     }
   }
 }

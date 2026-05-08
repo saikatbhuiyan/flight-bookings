@@ -14,6 +14,7 @@ export * from './interceptors/metrics.interceptor';
 export * from './interceptors/wrap-response.interceptor';
 export * from './interfaces';
 export * from './logger';
+export * from './messages';
 export * from './redis/redis.module';
 export * from './redis/redis.service';
 export * from './services';

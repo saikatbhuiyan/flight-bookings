@@ -82,7 +82,7 @@ describe('AuthController', () => {
         email: 'jane@example.com',
         password: 'Password123!',
       }),
-    ).resolves.toEqual(ApiResponseDto.success({ id: 1, email: 'jane@example.com' }, 'User registered successfully'));
+    ).resolves.toEqual(ApiResponseDto.success({ id: 1, email: 'jane@example.com' }, 'user.create.success'));
 
     expect(authClient.send).toHaveBeenCalledWith(
       MP.AUTH_REGISTER,
@@ -101,7 +101,7 @@ describe('AuthController', () => {
         deviceId: 'device-1',
         clientType: ClientType.WEB,
       }),
-    ).resolves.toEqual(ApiResponseDto.success(null, 'Login successful'));
+    ).resolves.toEqual(ApiResponseDto.success(null, 'auth.login.success'));
 
     expect(cookieService.setAccessToken).toHaveBeenCalledWith(response, 'access', 'device-1');
     expect(cookieService.setRefreshToken).toHaveBeenCalledWith(response, 'refresh', 'device-1');
@@ -117,7 +117,9 @@ describe('AuthController', () => {
         deviceId: 'device-1',
         clientType: ClientType.MOBILE,
       }),
-    ).resolves.toEqual(ApiResponseDto.success({ accessToken: 'access', refreshToken: 'refresh' }, 'Login successful'));
+    ).resolves.toEqual(
+      ApiResponseDto.success({ accessToken: 'access', refreshToken: 'refresh' }, 'auth.login.success'),
+    );
 
     expect(cookieService.setAccessToken).not.toHaveBeenCalled();
     expect(cookieService.setRefreshToken).not.toHaveBeenCalled();
@@ -141,7 +143,7 @@ describe('AuthController', () => {
           clientType: ClientType.WEB,
         },
       ),
-    ).resolves.toEqual(ApiResponseDto.success(null, 'Token refreshed successfully'));
+    ).resolves.toEqual(ApiResponseDto.success(null, 'auth.refresh.success'));
 
     expect(authClient.send).toHaveBeenCalledWith(
       MP.AUTH_REFRESH,
@@ -164,10 +166,7 @@ describe('AuthController', () => {
         clientType: ClientType.MOBILE,
       }),
     ).resolves.toEqual(
-      ApiResponseDto.success(
-        { accessToken: 'next-access', refreshToken: 'next-refresh' },
-        'Token refreshed successfully',
-      ),
+      ApiResponseDto.success({ accessToken: 'next-access', refreshToken: 'next-refresh' }, 'auth.refresh.success'),
     );
   });
 
@@ -191,14 +190,14 @@ describe('AuthController', () => {
         deviceId: 'device-1',
         clientType: ClientType.WEB,
       }),
-    ).resolves.toEqual(ApiResponseDto.success(null, 'Logged out successfully'));
+    ).resolves.toEqual(ApiResponseDto.success(null, 'auth.logout.success'));
 
     expect(cookieService.clearAuthCookies).toHaveBeenCalledWith(response, 'device-1');
   });
 
   it('returns the authenticated profile in the standard response shape', () => {
     expect(controller.getProfile({ id: 42, email: 'jane@example.com' })).toEqual(
-      ApiResponseDto.success({ id: 42, email: 'jane@example.com' }, 'Profile retrieved successfully'),
+      ApiResponseDto.success({ id: 42, email: 'jane@example.com' }, 'auth.profile.success'),
     );
   });
 
@@ -207,7 +206,7 @@ describe('AuthController', () => {
       throwError(() => ({
         response: {
           statusCode: 409,
-          message: 'User already exists',
+          code: 'user.email.already_exists',
         },
       })),
     );
@@ -227,6 +226,9 @@ describe('AuthController', () => {
 
     expect(error).toBeInstanceOf(HttpException);
     expect(error?.getStatus()).toBe(409);
-    expect(error?.message).toBe('User already exists');
+    expect(error?.getResponse()).toEqual({
+      code: 'user.email.already_exists',
+      message: 'Email already exists',
+    });
   });
 });

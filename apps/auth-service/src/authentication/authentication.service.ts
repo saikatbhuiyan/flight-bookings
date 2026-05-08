@@ -32,7 +32,9 @@ export class AuthenticationService {
     });
 
     if (existingUser) {
-      throw new ConflictException('User already exists');
+      const exception = new ConflictException('User already exists');
+      (exception as Error & { code?: string }).code = 'user.email.already_exists';
+      throw exception;
     }
 
     const user = this.usersRepository.create(registerDto);
@@ -53,15 +55,16 @@ export class AuthenticationService {
   async signIn(signInDto: SignInDto, ip?: string) {
     const { email, password, deviceId } = signInDto;
     const user = await this.usersRepository.findOneBy({ email });
-    if (!user) throw new UnauthorizedException('User does not exist');
+    if (!user) {
+      throw this.createUnauthorizedException('Invalid credentials', 'auth.invalid_credentials');
+    }
 
-    console.log('User found:', user);
     // Password validation
     if (user.password) {
       const isValid = await this.hashingService.compare(password, user.password);
       if (!isValid) {
         await this.auditService.logSignInAttempt(null, ip, deviceId, false);
-        throw new UnauthorizedException('Invalid credentials');
+        throw this.createUnauthorizedException('Invalid credentials', 'auth.invalid_credentials');
       }
     }
 
@@ -120,14 +123,14 @@ export class AuthenticationService {
       }>(refreshToken, this.getRefreshTokenVerifyOptions());
 
       if (deviceId && payload.deviceId !== deviceId) {
-        throw new UnauthorizedException('Refresh token does not match device');
+        throw this.createUnauthorizedException('Unauthorized', 'auth.unauthorized');
       }
 
       const effectiveDeviceId = deviceId || payload.deviceId;
 
       // Check if token is blacklisted
       if (await this.refreshTokenBlacklist.isBlacklisted(payload.refreshTokenId)) {
-        throw new UnauthorizedException('Refresh token has been revoked');
+        throw this.createUnauthorizedException('Unauthorized', 'auth.unauthorized');
       }
 
       // Validate token in Redis (per-device)
@@ -144,10 +147,14 @@ export class AuthenticationService {
       // Generate new tokens
       return this.generateTokens(user, effectiveDeviceId);
     } catch (error) {
-      if (error instanceof InvalidateRefreshTokenError) {
-        throw new UnauthorizedException('Invalid refresh token');
+      if (error instanceof UnauthorizedException) {
+        throw error;
       }
-      throw new UnauthorizedException(error || 'Unauthorized');
+
+      if (error instanceof InvalidateRefreshTokenError) {
+        throw this.createUnauthorizedException('Invalid refresh token', 'auth.invalid_refresh_token');
+      }
+      throw this.createUnauthorizedException('Unauthorized', 'auth.unauthorized');
     }
   }
 
@@ -171,7 +178,7 @@ export class AuthenticationService {
     });
 
     if (!user || !user.isActive) {
-      throw new UnauthorizedException('User is inactive or does not exist');
+      throw this.createUnauthorizedException('Unauthorized', 'auth.unauthorized');
     }
 
     return {
@@ -204,5 +211,11 @@ export class AuthenticationService {
       ...(tokenAudience ? { audience: tokenAudience } : {}),
       ...(tokenIssuer ? { issuer: tokenIssuer } : {}),
     };
+  }
+
+  private createUnauthorizedException(message: string, code: string): UnauthorizedException {
+    const exception = new UnauthorizedException(message);
+    (exception as Error & { code?: string }).code = code;
+    return exception;
   }
 }

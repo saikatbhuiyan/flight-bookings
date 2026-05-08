@@ -1,0 +1,15 @@
+export const ERROR_MESSAGES = {
+  'user.not_found': 'User not found',
+  'user.email.already_exists': 'Email already exists',
+  'auth.invalid_credentials': 'Invalid email or password',
+  'auth.invalid_refresh_token': 'Invalid refresh token',
+  'auth.unauthorized': 'Unauthorized access',
+  'auth.token.missing': 'Missing refresh token',
+  'validation.failed': 'Validation failed',
+  'resource.not_found': 'Resource not found',
+  'database.duplicate_entry': 'Duplicate entry',
+  'database.foreign_key_violation': 'Foreign key constraint violation',
+  'database.query_failed': 'Database query failed',
+  'server.internal_error': 'Something went wrong',
+  'server.unexpected_error': 'Unexpected error',
+} as const;

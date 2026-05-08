@@ -4,6 +4,14 @@ import { ApiResponse } from '../types';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { ConfigService } from '@nestjs/config';
 import { QueryFailedError } from 'typeorm';
+import { MessageKey, getMessage, isMessageKey } from '../messages';
+
+const DEFAULT_ERROR_CODES: Record<number, MessageKey> = {
+  [HttpStatus.BAD_REQUEST]: 'validation.failed',
+  [HttpStatus.UNAUTHORIZED]: 'auth.unauthorized',
+  [HttpStatus.NOT_FOUND]: 'resource.not_found',
+  [HttpStatus.INTERNAL_SERVER_ERROR]: 'server.internal_error',
+};
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -28,36 +36,38 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     let status: number;
     let message: string;
-    let errorCode: string;
+    let code: string | undefined;
     let errors: Array<Record<string, unknown> | string> | undefined;
-
-    console.log(exception);
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const res = exception.getResponse();
 
-      // Default error code based on status
-      errorCode = `ERR_${HttpStatus[status] || 'UNKNOWN'}`;
-
       if (typeof res === 'string') {
         message = res;
       } else if (typeof res === 'object' && res !== null) {
         const obj = res as Record<string, unknown>;
-        message = (obj.message as string | undefined) ?? (obj.error as string | undefined) ?? 'Error';
+        const responseCode = typeof obj.code === 'string' ? obj.code : undefined;
+        code = responseCode;
+        message =
+          responseCode && isMessageKey(responseCode)
+            ? getMessage(responseCode)
+            : ((obj.message as string | undefined) ?? (obj.error as string | undefined) ?? 'Error');
+        errors = Array.isArray(obj.errors) ? (obj.errors as Array<Record<string, unknown> | string>) : errors;
 
         // Better handling of class-validator errors which usually come as an array in 'message'
         if (Array.isArray(obj.message)) {
           errors = obj.message;
-          errorCode = 'ERR_VALIDATION_FAILED';
+          code = 'validation.failed';
+          message = getMessage('validation.failed');
         }
       } else {
         message = 'Error';
       }
     } else if (exception instanceof QueryFailedError) {
       status = HttpStatus.BAD_REQUEST;
-      message = 'Database query failed';
-      errorCode = 'ERR_DATABASE_ERROR';
+      code = 'database.query_failed';
+      message = getMessage('database.query_failed');
 
       // Mask database details in production
       if (!isProduction) {
@@ -67,26 +77,28 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       // Handle specific DB errors
       const error = exception as any;
       if (error.code === '23505') {
-        message = 'Duplicate entry';
-        errorCode = 'ERR_DUPLICATE_ENTRY';
+        code = 'database.duplicate_entry';
+        message = getMessage('database.duplicate_entry');
       } else if (error.code === '23503') {
-        message = 'Foreign key constraint violation';
-        errorCode = 'ERR_FOREIGN_KEY_VIOLATION';
+        code = 'database.foreign_key_violation';
+        message = getMessage('database.foreign_key_violation');
       }
     } else if (exception instanceof Error) {
       status = HttpStatus.INTERNAL_SERVER_ERROR;
+      code = 'server.internal_error';
       message = exception.message;
-      errorCode = 'ERR_INTERNAL_SERVER_ERROR';
 
       // Mask internal errors in production
       if (isProduction && status === 500) {
-        message = 'An unexpected error occurred. Please try again later.';
+        message = getMessage('server.internal_error');
       }
     } else {
       status = HttpStatus.INTERNAL_SERVER_ERROR;
-      message = 'Unexpected error';
-      errorCode = 'ERR_UNEXPECTED';
+      code = 'server.unexpected_error';
+      message = getMessage('server.unexpected_error');
     }
+
+    code ??= DEFAULT_ERROR_CODES[status];
 
     const apiVersion = this.configService.get<string>('appConfig.apiVersion', '1.0');
 
@@ -94,8 +106,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       success: false,
       version: apiVersion,
       statusCode: status,
+      code,
       message,
-      errorCode,
+      errorCode: code,
       data: null,
       timestamp,
       correlationId,

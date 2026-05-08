@@ -9,9 +9,9 @@ import {
   Query,
   HttpStatus,
   Inject,
-  HttpException,
   ParseIntPipe,
   HttpCode,
+  Logger,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
@@ -24,6 +24,8 @@ import {
   CreateAirportDto,
   UpdateAirportDto,
   QueryAirportDto,
+  ApiResponseDto,
+  createHttpExceptionFromRpcError,
 } from '@app/common';
 
 /**
@@ -33,6 +35,8 @@ import {
 @ApiTags('Airports')
 @Controller('airports')
 export class AirportController {
+  private readonly logger = new Logger(AirportController.name);
+
   constructor(@Inject('FLIGHT_SERVICE') private readonly flightClient: ClientProxy) {}
 
   @Post()
@@ -44,7 +48,8 @@ export class AirportController {
     description: 'Airport created successfully',
   })
   async create(@Body() createAirportDto: CreateAirportDto) {
-    return this.callService(MP.AIRPORT_CREATE, createAirportDto);
+    const result = await this.callService(MP.AIRPORT_CREATE, createAirportDto);
+    return ApiResponseDto.success(result, 'airport.create.success');
   }
 
   @Get()
@@ -55,14 +60,16 @@ export class AirportController {
     description: 'Airports retrieved successfully',
   })
   async findAll(@Query() queryDto: QueryAirportDto) {
-    return this.callService(MP.AIRPORT_FIND_ALL, queryDto);
+    const result = await this.callService(MP.AIRPORT_FIND_ALL, queryDto);
+    return ApiResponseDto.success(result, 'airport.list.success');
   }
 
   @Get('search')
   @Public()
   @ApiOperation({ summary: 'Search airports by code' })
   async searchByCode(@Query('code') code: string) {
-    return this.callService(MP.AIRPORT_SEARCH, { code });
+    const result = await this.callService(MP.AIRPORT_SEARCH, { code });
+    return ApiResponseDto.success(result, 'airport.search.success');
   }
 
   @Get('statistics')
@@ -70,7 +77,8 @@ export class AirportController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get airport statistics' })
   async getStatistics() {
-    return this.callService(MP.AIRPORT_FIND_ALL, { limit: 0 });
+    const result = await this.callService(MP.AIRPORT_FIND_ALL, { limit: 0 });
+    return ApiResponseDto.success(result, 'airport.statistics.success');
   }
 
   @Get(':id')
@@ -78,7 +86,8 @@ export class AirportController {
   @ApiOperation({ summary: 'Get airport by ID' })
   @ApiParam({ name: 'id', description: 'Airport ID' })
   async findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.callService(MP.AIRPORT_FIND_BY_ID, { id });
+    const result = await this.callService(MP.AIRPORT_FIND_BY_ID, { id });
+    return ApiResponseDto.success(result, 'airport.get.success');
   }
 
   @Patch(':id')
@@ -87,7 +96,8 @@ export class AirportController {
   @ApiOperation({ summary: 'Update airport' })
   @ApiParam({ name: 'id', description: 'Airport ID' })
   async update(@Param('id', ParseIntPipe) id: number, @Body() updateAirportDto: UpdateAirportDto) {
-    return this.callService(MP.AIRPORT_UPDATE, { id, updateAirportDto });
+    const result = await this.callService(MP.AIRPORT_UPDATE, { id, updateAirportDto });
+    return ApiResponseDto.success(result, 'airport.update.success');
   }
 
   @Delete(':id')
@@ -97,17 +107,16 @@ export class AirportController {
   @ApiOperation({ summary: 'Delete airport' })
   @ApiParam({ name: 'id', description: 'Airport ID' })
   async remove(@Param('id', ParseIntPipe) id: number) {
-    return this.callService(MP.AIRPORT_DELETE, { id });
+    await this.callService(MP.AIRPORT_DELETE, { id });
+    return ApiResponseDto.success(null, 'airport.delete.success');
   }
 
   private async callService<T>(pattern: string, data: any): Promise<T> {
     try {
       return await firstValueFrom(this.flightClient.send<T>(pattern, data));
     } catch (error) {
-      const rpcError = error;
-      const status = rpcError.statusCode || rpcError.status || HttpStatus.INTERNAL_SERVER_ERROR;
-      const message = rpcError.message || 'Internal server error';
-      throw new HttpException(message, status);
+      this.logger.error(`Error calling ${pattern}`, JSON.stringify(error, null, 2));
+      throw createHttpExceptionFromRpcError(error);
     }
   }
 }

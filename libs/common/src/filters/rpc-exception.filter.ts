@@ -1,5 +1,13 @@
 import { Catch, ExceptionFilter, ArgumentsHost, HttpException, Logger } from '@nestjs/common';
 import { Observable, throwError } from 'rxjs';
+import { MessageKey } from '../messages';
+
+const DEFAULT_RPC_ERROR_CODES: Record<number, MessageKey> = {
+  400: 'validation.failed',
+  401: 'auth.unauthorized',
+  404: 'resource.not_found',
+  500: 'server.internal_error',
+};
 
 @Catch()
 export class CommonRpcExceptionFilter implements ExceptionFilter {
@@ -16,14 +24,20 @@ export class CommonRpcExceptionFilter implements ExceptionFilter {
         ? {
             status: exception.getStatus(),
             message: exception.getResponse(),
+            code:
+              typeof exception.getResponse() === 'object' && exception.getResponse() !== null
+                ? ((exception.getResponse() as Record<string, unknown>).code as string | undefined)
+                : undefined,
           }
         : {
             status: exception.status || 500,
             message: exception.message || 'Internal server error',
+            code: exception.code,
           };
 
     const status = error.status;
     const message = typeof error.message === 'object' ? JSON.stringify(error.message) : error.message;
+    const code = error.code || DEFAULT_RPC_ERROR_CODES[status] || 'server.internal_error';
 
     if (isRpc) {
       if (status >= 500) {
@@ -37,7 +51,9 @@ export class CommonRpcExceptionFilter implements ExceptionFilter {
     return throwError(() => ({
       status,
       message: error.message,
-      errorCode: exception.errorCode || `ERR_RPC_${status}`,
+      code,
+      errorCode: code,
+      errors: exception.errors,
     }));
   }
 }

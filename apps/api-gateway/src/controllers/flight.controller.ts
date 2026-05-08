@@ -5,7 +5,7 @@ import {
   Param,
   HttpStatus,
   Inject,
-  HttpException,
+  Logger,
   Post,
   Body,
   Delete,
@@ -21,12 +21,15 @@ import {
   Role,
   SharedCreateFlightDto,
   SharedSearchFlightDto,
+  createHttpExceptionFromRpcError,
 } from '@app/common';
 import { ApiOperation, ApiResponse, ApiTags, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('Flights')
 @Controller('flights')
 export class FlightController {
+  private readonly logger = new Logger(FlightController.name);
+
   constructor(@Inject('FLIGHT_SERVICE') private readonly flightClient: ClientProxy) {}
 
   @Public()
@@ -39,7 +42,7 @@ export class FlightController {
   })
   async searchFlights(@Query() searchDto: SharedSearchFlightDto) {
     const result = await this.callService(MP.FLIGHT_SEARCH, searchDto);
-    return ApiResponseDto.success(result, 'Flights retrieved successfully');
+    return ApiResponseDto.success(result, 'flight.list.success');
   }
 
   @Public()
@@ -57,7 +60,7 @@ export class FlightController {
   })
   async getFlightById(@Param('id', ParseIntPipe) id: number) {
     const result = await this.callService(MP.FLIGHT_FIND_BY_ID, { id });
-    return ApiResponseDto.success(result, 'Flight retrieved successfully');
+    return ApiResponseDto.success(result, 'flight.get.success');
   }
 
   @Post()
@@ -66,7 +69,7 @@ export class FlightController {
   @ApiOperation({ summary: 'Create a new flight' })
   async create(@Body() createDto: SharedCreateFlightDto) {
     const result = await this.callService(MP.FLIGHT_CREATE, createDto);
-    return ApiResponseDto.success(result, 'Flight created successfully');
+    return ApiResponseDto.success(result, 'flight.create.success');
   }
 
   @Delete(':id')
@@ -75,48 +78,15 @@ export class FlightController {
   @ApiOperation({ summary: 'Delete a flight' })
   async remove(@Param('id', ParseIntPipe) id: number) {
     await this.callService(MP.FLIGHT_DELETE, { id });
-    return ApiResponseDto.success(null, 'Flight deleted successfully');
+    return ApiResponseDto.success(null, 'flight.delete.success');
   }
 
   private async callService<T>(pattern: string, data: any): Promise<T> {
     try {
       return await firstValueFrom(this.flightClient.send<T>(pattern, data));
     } catch (error) {
-      const rpcError = error;
-      console.error(`[Gateway] Error calling ${pattern}:`, JSON.stringify(rpcError, null, 2));
-
-      // Extract status: handle numeric and standard RMQ status formats
-      let status = HttpStatus.INTERNAL_SERVER_ERROR;
-
-      // Look for status in common locations
-      if (typeof rpcError.status === 'number') {
-        status = rpcError.status;
-      } else if (typeof rpcError.statusCode === 'number') {
-        status = rpcError.statusCode;
-      } else if (rpcError.response?.status && typeof rpcError.response.status === 'number') {
-        status = rpcError.response.status;
-      } else if (rpcError.response?.statusCode && typeof rpcError.response.statusCode === 'number') {
-        status = rpcError.response.statusCode;
-      }
-
-      // Extract message: handle string, array, or nested object formats
-      let message = 'Internal server error';
-      if (typeof rpcError.message === 'string') {
-        message = rpcError.message;
-      } else if (typeof rpcError.response === 'string') {
-        message = rpcError.response;
-      } else if (rpcError.response && typeof rpcError.response === 'object') {
-        const res = rpcError.response;
-        message = res.message || res.error || JSON.stringify(res);
-      } else if (rpcError.message && typeof rpcError.message === 'object') {
-        const msg = rpcError.message;
-        message = msg.message || msg.error || JSON.stringify(msg);
-      } else if (rpcError.error && typeof rpcError.error === 'string') {
-        message = rpcError.error;
-      }
-
-      console.log(`[Gateway] Extracted status: ${status}, message: ${message}`);
-      throw new HttpException(message, status);
+      this.logger.error(`Error calling ${pattern}`, JSON.stringify(error, null, 2));
+      throw createHttpExceptionFromRpcError(error);
     }
   }
 }

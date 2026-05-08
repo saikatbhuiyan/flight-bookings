@@ -10,6 +10,9 @@ export interface ApiResponse<T = unknown> {
   /** Human-readable message (e.g. “Request successful”, “Validation failed”) */
   message: string;
 
+  /** Stable machine-readable response code */
+  code?: string;
+
   /** The actual data payload (can be null for errors) */
   data: T | null;
 

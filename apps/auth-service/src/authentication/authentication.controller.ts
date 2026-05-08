@@ -42,7 +42,7 @@ export class AuthMessageController {
     }
     this.logger.debug(`HTTP: Registering ${data.email}`);
     const result = await this.authService.register(data);
-    return ApiResponseDto.success(result, 'User registered successfully');
+    return ApiResponseDto.success(result, 'user.create.success');
   }
 
   @Public()
@@ -83,7 +83,7 @@ export class AuthMessageController {
       });
     }
     const result = await this.authService.refreshTokens(data);
-    return ApiResponseDto.success(result, 'Token refreshed successfully');
+    return ApiResponseDto.success(result, 'auth.refresh.success');
   }
 
   @Post('logout')
