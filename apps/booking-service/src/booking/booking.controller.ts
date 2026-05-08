@@ -22,7 +22,9 @@ export class BookingController {
     const data = await this.bookingService.createBooking(dto, req.user.id);
     return {
       success: true,
-      message: 'Booking initiated successfully. Please complete payment within 15 minutes.',
+      message: data.paymentRequired
+        ? 'Booking initiated successfully. Please complete payment within 15 minutes.'
+        : 'Booking completed successfully (local payment disabled).',
       data,
     };
   }

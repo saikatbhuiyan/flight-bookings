@@ -1,14 +1,20 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, Inject, Logger } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { SeatLockService } from '@app/seat-lock';
 import { BookingSagaOrchestrator, CreateBookingDto } from '../booking-saga/saga-orchestrator.service';
 import { BookingRepository } from '../repositories/booking.repository';
+import { PAYMENT_CLIENT } from '../payment/payment.providers';
+import { PaymentClient } from '../payment/payment-client.interface';
 
 @Injectable()
 export class BookingService {
+  private readonly logger = new Logger(BookingService.name);
+
   constructor(
     private readonly sagaOrchestrator: BookingSagaOrchestrator,
     private readonly bookingRepository: BookingRepository,
     private readonly seatLockService: SeatLockService,
+    @Inject(PAYMENT_CLIENT) private readonly paymentClient: PaymentClient,
   ) {}
 
   async createBooking(dto: CreateBookingDto, userId: number) {
@@ -18,14 +24,38 @@ export class BookingService {
         userId,
       });
 
+      // If PAYMENT_REQUIRED=false, the payment client is a mock and we auto-complete
+      // so local dev can finish the full booking flow without payment-service.
+      const paymentIntent = await this.paymentClient.createPaymentIntent({
+        bookingId: booking.id,
+        bookingReference: booking.bookingReference,
+        userId,
+        amountCents: Math.round(Number(booking.totalCost || 0) * 100),
+        currency: 'USD',
+        paymentMethod: 'card',
+        idempotencyKey: `booking:${booking.bookingReference}`,
+      });
+
+      const isMock = paymentIntent?.status === 'mocked';
+      let finalBooking = booking;
+      if (isMock) {
+        const txId = paymentIntent.paymentId || `local_mock_tx_${randomUUID()}`;
+        finalBooking = await this.sagaOrchestrator.completeBooking(booking.bookingReference, txId);
+      }
+
       return {
-        bookingId: booking.bookingReference,
-        status: booking.status,
-        expiresAt: booking.expiresAt,
-        totalCost: booking.totalCost,
-        paymentRequired: true,
+        bookingId: finalBooking.bookingReference,
+        status: finalBooking.status,
+        expiresAt: finalBooking.expiresAt,
+        totalCost: finalBooking.totalCost,
+        paymentRequired: !isMock,
+        payment: {
+          paymentId: paymentIntent.paymentId,
+          clientSecret: paymentIntent.clientSecret,
+        },
       };
     } catch (error) {
+      this.logger.warn(`createBooking failed: ${error instanceof Error ? error.message : String(error)}`);
       throw new BadRequestException(error.message);
     }
   }

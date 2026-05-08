@@ -18,6 +18,7 @@ import { OutboxService } from './outbox/outbox.service';
 import { BookingRepository } from './repositories/booking.repository';
 import { SeatLockService } from '@app/seat-lock';
 import { EventEmitterModule, EventEmitter2 } from '@nestjs/event-emitter';
+import { paymentProviders } from './payment/payment.providers';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { EventEmitterModule, EventEmitter2 } from '@nestjs/event-emitter';
     BookingRepository,
     SeatLockService,
     EventEmitter2,
+    ...paymentProviders,
   ],
 })
 export class BookingServiceModule {}
