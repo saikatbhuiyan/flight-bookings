@@ -33,7 +33,7 @@ export class SeatLockService {
     const existing = await redis.get(bookingKey);
 
     if (existing) {
-      const parsed = JSON.parse(existing);
+      const parsed = JSON.parse(existing) as { seats: string[]; timestamp: number };
       this.logger.warn(`Idempotent booking lock reuse ${bookingId}`);
 
       return {
@@ -41,7 +41,7 @@ export class SeatLockService {
         lockedSeats: parsed.seats,
         failedSeats: [],
         lockKey: bookingKey,
-        expiresAt: new Date(parsed.timestamp + this.LOCK_TTL * 1000),
+        expiresAt: new Date(Number(parsed.timestamp) + this.LOCK_TTL * 1000),
       };
     }
 
@@ -201,11 +201,12 @@ export class SeatLockService {
     const bookingData = await redis.get(bookingKey);
     if (!bookingData) return false;
 
-    const parsed = JSON.parse(bookingData);
+    const parsed = JSON.parse(bookingData) as { seats?: unknown };
+    const seats = Array.isArray(parsed?.seats) ? (parsed.seats as string[]) : [];
 
     const pipeline = redis.pipeline();
 
-    for (const seat of parsed.seats) {
+    for (const seat of seats) {
       const seatKey = this.getSeatKey(flightId, seat);
       const ttl = await redis.ttl(seatKey);
 
@@ -263,14 +264,28 @@ export class SeatLockService {
   // Seat validation hook
   // Replace with DB or seat service
   // ---------------------------------------------
-  private validateSeatsExist(flightId: number, seats: string[]): Promise<void> {
-    // TODO: Replace with DB lookup or cache
-    // Example:
-    // const validSeats = await flightSeatRepo.find()
+  private validateSeatsExist(flightId: number, seats: string[]): void {
+    // High-signal validation only (KISS): format + duplicates.
+    // Existence validation belongs in flight/seat domain and can be layered in later.
+    if (!seats?.length) return;
 
-    if (seats.length > 0) {
-      // Validate individual seats if provided
-      // this.logger.log(`Validating ${seats.length} seats for flight ${flightId}`);
+    const normalized = seats.map((s) => (s || '').trim().toUpperCase()).filter(Boolean);
+    const unique = new Set(normalized);
+
+    if (unique.size !== normalized.length) {
+      throw new Error('Duplicate seat numbers detected');
+    }
+
+    // Common airline seat format like "12A", "1C", "30F"
+    const seatPattern = /^[1-9]\d{0,2}[A-Z]$/;
+    const invalid = normalized.filter((s) => !seatPattern.test(s));
+    if (invalid.length > 0) {
+      throw new Error(`Invalid seat number(s): ${invalid.join(', ')}`);
+    }
+
+    // Optional telemetry breadcrumb (avoid noisy logs)
+    if (normalized.length > 0) {
+      this.logger.debug(`Validated ${normalized.length} seat numbers for flight ${flightId}`);
     }
   }
 }
