@@ -7,21 +7,15 @@ import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-node';
 import { DiagConsoleLogger, DiagLogLevel, diag } from '@opentelemetry/api';
 
 export function initializeTracing(serviceName: string) {
-  // Enable diagnostics (optional, for debugging)
   if (process.env.NODE_ENV === 'development') {
     diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.INFO);
   }
 
-  // Configure OTLP exporter (sends to Jaeger/Grafana Tempo/any OTLP-compatible backend)
   const traceExporter = new OTLPTraceExporter({
     url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318/v1/traces',
-    headers: {
-      // Optional: Add authentication headers if needed
-      // 'Authorization': `Bearer ${process.env.OTEL_AUTH_TOKEN}`,
-    },
+    headers: {},
   });
 
-  // Create resource with service information
   const resource = new Resource({
     [ATTR_SERVICE_NAME]: serviceName,
     [ATTR_SERVICE_VERSION]: process.env.SERVICE_VERSION || '1.0.0',
@@ -29,7 +23,6 @@ export function initializeTracing(serviceName: string) {
     'service.namespace': 'flight-booking',
   });
 
-  // Initialize SDK
   const sdk = new NodeSDK({
     resource,
     spanProcessor: new BatchSpanProcessor(traceExporter, {
@@ -43,7 +36,7 @@ export function initializeTracing(serviceName: string) {
         '@opentelemetry/instrumentation-http': {
           enabled: true,
           ignoreIncomingRequestHook: (request) => {
-            // Ignore health checks
+            // Health and metrics endpoints would overwhelm traces without adding useful signal.
             return request.url?.includes('/health') || request.url?.includes('/metrics');
           },
         },
@@ -55,10 +48,8 @@ export function initializeTracing(serviceName: string) {
     ],
   });
 
-  // Start the SDK
   sdk.start();
 
-  // Graceful shutdown
   process.on('SIGTERM', () => {
     sdk
       .shutdown()

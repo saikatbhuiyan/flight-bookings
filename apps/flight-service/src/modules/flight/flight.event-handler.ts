@@ -21,9 +21,6 @@ export class FlightEventHandler {
     private readonly dataSource: DataSource,
   ) {}
 
-  /**
-   * Handle reserve seats event (Idempotent)
-   */
   @RabbitSubscribe({
     exchange: 'booking.events',
     routingKey: 'flight.reserve-seats',
@@ -43,7 +40,6 @@ export class FlightEventHandler {
     });
 
     try {
-      // Idempotency check
       const alreadyProcessed = await this.processedEventRepository.findOne({
         where: { eventId },
       });
@@ -73,10 +69,8 @@ export class FlightEventHandler {
             throw new Error(`Not enough seats. Requested: ${msg.seatCount}, Available: ${currentAvailable}`);
           }
 
-          // Decrement seats
           await manager.decrement(Flight, { id: msg.flightId }, seatField, msg.seatCount);
 
-          // Mark event as processed (idempotency)
           await manager.save(ProcessedEvent, {
             eventId,
             eventType: 'flight.reserve-seats',
@@ -92,16 +86,12 @@ export class FlightEventHandler {
       this.logger.error(`Error reserving seats for event ${eventId}:`, error);
       span.setStatus({ code: SpanStatusCode.ERROR, message: error.message });
 
-      // Throw error to trigger RabbitMQ retry/DLQ
       throw error;
     } finally {
       span.end();
     }
   }
 
-  /**
-   * Handle confirm seats event (Idempotent)
-   */
   @RabbitSubscribe({
     exchange: 'booking.events',
     routingKey: 'flight.confirm-seats',
@@ -129,7 +119,6 @@ export class FlightEventHandler {
       }
 
       await this.dataSource.transaction(async (manager) => {
-        // Mark as processed (seats already reserved, just confirm)
         await manager.save(ProcessedEvent, {
           eventId,
           eventType: 'flight.confirm-seats',
@@ -149,9 +138,6 @@ export class FlightEventHandler {
     }
   }
 
-  /**
-   * Handle release seats event (Idempotent - Compensation)
-   */
   @RabbitSubscribe({
     exchange: 'booking.events',
     routingKey: 'flight.release-seats',
@@ -182,7 +168,6 @@ export class FlightEventHandler {
       await this.dataSource.transaction(async (manager) => {
         const seatField = this.getSeatField(msg.seatClass);
 
-        // Increment seats back
         await manager.increment(Flight, { id: msg.flightId }, seatField, msg.seatCount);
 
         await manager.save(ProcessedEvent, {

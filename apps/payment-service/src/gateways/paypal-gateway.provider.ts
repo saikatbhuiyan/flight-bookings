@@ -10,21 +10,6 @@ import {
   WebhookEvent,
 } from './payment-gateway.interface';
 
-/**
- * PayPal Payment Gateway Provider
- *
- * Handles: PAYPAL checkout flow.
- *
- * Implementation guide
- * ────────────────────
- * 1. Install the PayPal SDK:
- *      npm install @paypal/checkout-server-sdk
- * 2. Configure credentials via env:
- *      PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_MODE (sandbox | live)
- * 3. Implement PayPal Orders v2 API when needed.
- *
- * PayPal docs: https://developer.paypal.com/docs/api/orders/v2/
- */
 @Injectable()
 export class PayPalGatewayProvider implements IPaymentGateway {
   private readonly logger = new Logger(PayPalGatewayProvider.name);
@@ -53,11 +38,6 @@ export class PayPalGatewayProvider implements IPaymentGateway {
 
   createPaymentIntent(params: CreatePaymentIntentParams): Promise<PaymentIntent> {
     this.logger.log(`Creating PayPal order for booking ${params.bookingId}`);
-
-    // Flow:
-    //   1. POST /v2/checkout/orders → get orderId + approve link
-    //   2. Return clientSecret = approvalUrl (client redirects user there)
-    //   3. After approval, client calls capturePayment(orderId)
 
     throw new Error(
       'PayPal gateway is not implemented yet. Use Stripe for now or implement PayPal Orders v2 integration.',

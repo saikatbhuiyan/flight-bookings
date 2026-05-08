@@ -21,14 +21,8 @@ export class SeatLockService {
     const redis = this.redisService.getClient();
     const timestamp = Date.now();
 
-    // ------------------------------------------
-    // 1. Seat validation (DB or cache hook)
-    // ------------------------------------------
     this.validateSeatsExist(flightId, seats);
 
-    // ------------------------------------------
-    // 2. Idempotency check
-    // ------------------------------------------
     const bookingKey = this.getBookingKey(flightId, bookingId);
     const existing = await redis.get(bookingKey);
 
@@ -47,9 +41,8 @@ export class SeatLockService {
 
     const expiresAt = new Date(timestamp + this.LOCK_TTL * 1000);
 
-    // ------------------------------------------
-    // 3. Cluster-safe Lua script
-    // ------------------------------------------
+    // Lock validation and writes happen inside one Redis script so concurrent requests
+    // cannot split seat availability checks from seat ownership updates.
     const luaScript = `
             local flight_id = ARGV[1]
             local booking_id = ARGV[2]
@@ -158,10 +151,6 @@ export class SeatLockService {
     };
   }
 
-  // =============================================
-  // RELEASE LOCKS (Ownership Safe)
-  // =============================================
-
   async releaseSeats(flightId: number, bookingId: string): Promise<void> {
     const redis = this.redisService.getClient();
     const bookingKey = this.getBookingKey(flightId, bookingId);
@@ -175,7 +164,6 @@ export class SeatLockService {
 
       const { seats } = JSON.parse(bookingData);
 
-      // Delete individual seat locks
       const pipeline = redis.pipeline();
       seats.forEach((seat: string) => {
         pipeline.del(this.getSeatKey(flightId, seat));
@@ -189,10 +177,6 @@ export class SeatLockService {
       throw error;
     }
   }
-
-  // =============================================
-  // EXTEND LOCK (Fixed TTL Extension)
-  // =============================================
 
   async extendLock(flightId: number, bookingId: string, additionalSeconds = 300): Promise<boolean> {
     const redis = this.redisService.getClient();
@@ -225,10 +209,6 @@ export class SeatLockService {
     return true;
   }
 
-  // =============================================
-  // CHECK LOCK STATUS
-  // =============================================
-
   async areSeatsLocked(flightId: number, seats: string[]): Promise<Map<string, boolean>> {
     const redis = this.redisService.getClient();
     const pipeline = redis.pipeline();
@@ -248,10 +228,6 @@ export class SeatLockService {
     return result;
   }
 
-  // =============================================
-  // HELPER METHODS
-  // =============================================
-
   private getSeatKey(flightId: number, seat: string) {
     return `seat:lock:{${flightId}}:${seat}`;
   }
@@ -260,13 +236,9 @@ export class SeatLockService {
     return `seat:lock:booking:{${flightId}}:${bookingId}`;
   }
 
-  // ---------------------------------------------
-  // Seat validation hook
-  // Replace with DB or seat service
-  // ---------------------------------------------
   private validateSeatsExist(flightId: number, seats: string[]): void {
-    // High-signal validation only (KISS): format + duplicates.
-    // Existence validation belongs in flight/seat domain and can be layered in later.
+    // This service only validates shape and duplicates. Source-of-truth seat existence
+    // still belongs to the flight or seat domain.
     if (!seats?.length) return;
 
     const normalized = seats.map((s) => (s || '').trim().toUpperCase()).filter(Boolean);
@@ -276,14 +248,12 @@ export class SeatLockService {
       throw new Error('Duplicate seat numbers detected');
     }
 
-    // Common airline seat format like "12A", "1C", "30F"
     const seatPattern = /^[1-9]\d{0,2}[A-Z]$/;
     const invalid = normalized.filter((s) => !seatPattern.test(s));
     if (invalid.length > 0) {
       throw new Error(`Invalid seat number(s): ${invalid.join(', ')}`);
     }
 
-    // Optional telemetry breadcrumb (avoid noisy logs)
     if (normalized.length > 0) {
       this.logger.debug(`Validated ${normalized.length} seat numbers for flight ${flightId}`);
     }

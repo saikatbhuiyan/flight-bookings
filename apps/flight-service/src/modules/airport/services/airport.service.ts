@@ -8,9 +8,6 @@ import { QueryAirportDto } from '../dto/query-airport.dto';
 import { AirportResponseDto } from '../dto/airport-response.dto';
 import { PaginatedResponseDto } from '../../../common/dto/pagination-response.dto';
 
-/**
- * Service layer for Airport operations
- */
 @Injectable()
 export class AirportService {
   private readonly logger = new Logger(AirportService.name);
@@ -23,19 +20,16 @@ export class AirportService {
   async create(createAirportDto: CreateAirportDto): Promise<AirportResponseDto> {
     this.logger.log(`Creating new airport: ${createAirportDto.name}`);
 
-    // Validate city exists
     const city = await this.cityRepository.findById(createAirportDto.cityId);
     if (!city) {
       throw new NotFoundException(`City with ID ${createAirportDto.cityId} not found`);
     }
 
-    // Check IATA code uniqueness
     const existingByCode = await this.airportRepository.findByCode(createAirportDto.code);
     if (existingByCode) {
       throw new ConflictException(`Airport with code "${createAirportDto.code}" already exists`);
     }
 
-    // Check ICAO code uniqueness if provided
     if (createAirportDto.icaoCode) {
       const existingByIcao = await this.airportRepository.findByIcaoCode(createAirportDto.icaoCode);
       if (existingByIcao) {
@@ -100,7 +94,6 @@ export class AirportService {
       throw new NotFoundException(`Airport with ID ${id} not found`);
     }
 
-    // Validate city if being updated
     if (updateAirportDto.cityId && updateAirportDto.cityId !== existing.cityId) {
       const city = await this.cityRepository.findById(updateAirportDto.cityId);
       if (!city) {
@@ -108,7 +101,6 @@ export class AirportService {
       }
     }
 
-    // Check code uniqueness if being updated
     if (updateAirportDto.code && updateAirportDto.code !== existing.code) {
       const duplicate = await this.airportRepository.findByCode(updateAirportDto.code);
       if (duplicate) {

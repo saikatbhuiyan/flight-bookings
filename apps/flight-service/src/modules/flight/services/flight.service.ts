@@ -21,7 +21,6 @@ export class FlightService {
   async create(createDto: SharedCreateFlightDto): Promise<Flight> {
     const { airplaneId, departureAirportId, arrivalAirportId } = createDto;
 
-    // Validate existence
     const airplane = await this.airplaneRepository.findById(airplaneId);
     if (!airplane) throw new NotFoundException(`Airplane ${airplaneId} not found`);
 
@@ -61,10 +60,6 @@ export class FlightService {
     await this.flightRepository.delete(id);
   }
 
-  /**
-   * Reserve seats (soft reservation during checkout)
-   * This decrements available seats but can be rolled back
-   */
   @OnEvent('flight.reserve-seats')
   async reserveSeats(payload: {
     flightId: number;
@@ -77,14 +72,13 @@ export class FlightService {
     await this.dataSource.transaction(async (manager) => {
       const flight = await manager.findOne(Flight, {
         where: { id: flightId },
-        lock: { mode: 'pessimistic_write' }, // Row-level lock
+        lock: { mode: 'pessimistic_write' },
       });
 
       if (!flight) {
         throw new BadRequestException('Flight not found');
       }
 
-      // Determine which seat column to update
       const seatField = this.getSeatField(seatClass);
       const currentAvailable = flight[seatField] as number;
 
@@ -94,30 +88,19 @@ export class FlightService {
         );
       }
 
-      // Decrement available seats
       await manager.decrement(Flight, { id: flightId }, seatField, seatCount);
 
       this.logger.log(`Reserved ${seatCount} ${seatClass} seats for booking ${bookingId} on flight ${flightId}`);
     });
   }
 
-  /**
-   * Confirm seats (permanent - after payment)
-   * No changes needed as seats were already reserved
-   */
   @OnEvent('flight.confirm-seats')
   confirmSeats(payload: { flightId: number; bookingId: string; seatClass: string; seatCount: number }): void {
     const { flightId, bookingId } = payload;
 
-    // Seats already decremented during reserve step
-    // This event just confirms the reservation is permanent
     this.logger.log(`Confirmed seat reservation for booking ${bookingId} on flight ${flightId}`);
   }
 
-  /**
-   * Release seats (compensation - on booking failure or cancellation)
-   * This increments available seats back
-   */
   @OnEvent('flight.release-seats')
   async releaseSeats(payload: {
     flightId: number;
@@ -130,16 +113,12 @@ export class FlightService {
     await this.dataSource.transaction(async (manager) => {
       const seatField = this.getSeatField(seatClass);
 
-      // Increment available seats
       await manager.increment(Flight, { id: flightId }, seatField, seatCount);
 
       this.logger.log(`Released ${seatCount} ${seatClass} seats for booking ${bookingId} on flight ${flightId}`);
     });
   }
 
-  /**
-   * Map seat class to database column
-   */
   private getSeatField(seatClass: string): keyof Flight {
     const mapping = {
       ECONOMY: 'economySeatsAvailable',

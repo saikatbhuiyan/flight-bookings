@@ -27,9 +27,6 @@ export class RefundController {
     return this.refundService.getRefundsByBooking(bookingId);
   }
 
-  /**
-   * RabbitMQ message handler for creating refunds
-   */
   @MessagePattern('payment.create_refund')
   async handleCreateRefund(@Payload() data: { dto: CreateRefundDto; idempotencyKey?: string } | CreateRefundDto) {
     const dto = 'dto' in data ? data.dto : data;
@@ -38,9 +35,6 @@ export class RefundController {
     return this.refundService.createRefund(dto, idempotencyKey);
   }
 
-  /**
-   * RabbitMQ message handler for getting refunds
-   */
   @MessagePattern('payment.get_refunds')
   async handleGetRefunds(@Payload() data: { bookingId: number }) {
     this.logger.log(`[RabbitMQ] Getting refunds for booking ${data.bookingId}`);

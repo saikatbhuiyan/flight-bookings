@@ -57,18 +57,12 @@ export class PaymentIntentController {
     return this.paymentService.getLedgerEntries(query);
   }
 
-  /**
-   * RabbitMQ message handler for creating payment intents
-   */
   @MessagePattern('payment.create_intent')
   async handleCreateIntent(@Payload() dto: CreatePaymentIntentDto) {
     this.logger.log(`[RabbitMQ] Creating payment intent for booking ${dto.bookingId}`);
     return this.paymentService.createPaymentIntent(dto);
   }
 
-  /**
-   * RabbitMQ message handler for getting payment intent
-   */
   @MessagePattern('payment.get_intent')
   async handleGetIntent(@Payload() data: { id: string }) {
     this.logger.log(`[RabbitMQ] Getting payment intent ${data.id}`);
