@@ -55,4 +55,4 @@ async function bootstrap() {
   logger.log(`Notification Service HTTP server is running on port: ${port}`);
 }
 
-bootstrap();
+void bootstrap();

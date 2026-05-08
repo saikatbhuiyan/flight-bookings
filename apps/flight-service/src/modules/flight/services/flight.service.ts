@@ -30,24 +30,17 @@ export class FlightService {
     const arrAirport = await this.airportRepository.findById(arrivalAirportId);
     if (!arrAirport) throw new NotFoundException(`Arrival Airport ${arrivalAirportId} not found`);
 
-    return this.flightRepository.create({
+    const flightData: Partial<Flight> = {
       ...createDto,
       departureTime: new Date(createDto.departureTime),
       arrivalTime: new Date(createDto.arrivalTime),
-    } as any);
+    };
+
+    return this.flightRepository.create(flightData);
   }
 
   async search(searchDto: SharedSearchFlightDto): Promise<Flight[]> {
-    const flights = await this.flightRepository.search(searchDto);
-    console.log('FlightService.search result count:', flights.length);
-    if (flights.length > 0) {
-      console.log('First flight keys:', Object.keys(flights[0]));
-      console.log(
-        'First flight airplane keys:',
-        flights[0].airplane ? Object.keys(flights[0].airplane) : 'No airplane',
-      );
-    }
-    return flights;
+    return this.flightRepository.search(searchDto);
   }
 
   async findOne(id: number): Promise<Flight> {

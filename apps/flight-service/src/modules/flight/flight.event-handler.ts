@@ -6,6 +6,17 @@ import { trace, context as otelContext, SpanStatusCode } from '@opentelemetry/ap
 import { ProcessedEvent } from '../../entities/processed-events.entity';
 import { Flight } from '../../entities/flight.entity';
 
+type FlightSeatEvent = {
+  flightId: number;
+  bookingId: string;
+  seatClass: string;
+  seatCount: number;
+  _metadata?: {
+    eventId?: string;
+    traceId?: string;
+  };
+};
+
 @Injectable()
 export class FlightEventHandler {
   private readonly logger = new Logger(FlightEventHandler.name);
@@ -26,7 +37,7 @@ export class FlightEventHandler {
     routingKey: 'flight.reserve-seats',
     queue: 'flight-service.reserve-seats',
   })
-  async handleReserveSeats(msg: any): Promise<void> {
+  async handleReserveSeats(msg: FlightSeatEvent): Promise<void> {
     const eventId = msg._metadata?.eventId;
     const traceId = msg._metadata?.traceId;
 
@@ -97,7 +108,7 @@ export class FlightEventHandler {
     routingKey: 'flight.confirm-seats',
     queue: 'flight-service.confirm-seats',
   })
-  async handleConfirmSeats(msg: any): Promise<void> {
+  async handleConfirmSeats(msg: FlightSeatEvent): Promise<void> {
     const eventId = msg._metadata?.eventId;
 
     const span = this.tracer.startSpan('flight.handleConfirmSeats', {
@@ -143,7 +154,7 @@ export class FlightEventHandler {
     routingKey: 'flight.release-seats',
     queue: 'flight-service.release-seats',
   })
-  async handleReleaseSeats(msg: any): Promise<void> {
+  async handleReleaseSeats(msg: FlightSeatEvent): Promise<void> {
     const eventId = msg._metadata?.eventId;
 
     const span = this.tracer.startSpan('flight.handleReleaseSeats', {

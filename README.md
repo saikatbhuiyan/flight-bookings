@@ -1,253 +1,108 @@
-# Flight Booking Microservices System
+# Flight Booking Microservices
 
-A production-grade, scalable microservices architecture for flight booking built with NestJS, featuring distributed tracing, event-driven architecture, and comprehensive observability.
+NestJS-based flight booking platform built as a multi-service system with RabbitMQ, PostgreSQL, Redis, LocalStack S3, and OpenTelemetry. The repository is structured for both engineering review and hands-on local development.
 
-## 🏗️ Architecture Overview
+## What This Project Shows
 
-```
-┌─────────────────┐
-│   API Gateway   │ ← HTTP/REST Entry Point
-└────────┬────────┘
-         │
-    ┌────┴────┐
-    │ RabbitMQ│ ← Message Broker
-    └────┬────┘
-         │
-    ┌────┴─────────────────────────┐
-    │                              │
-┌───▼────┐  ┌────────┐  ┌─────────▼┐  ┌──────────────┐
-│  Auth  │  │ Flight │  │  Booking │  │Notification  │
-│Service │  │Service │  │  Service │  │   Service    │
-└───┬────┘  └───┬────┘  └────┬─────┘  └──────────────┘
-    │           │             │
-    └───────┬───┴─────────────┘
-            │
-    ┌───────▼────────┐
-    │   PostgreSQL   │
-    └────────────────┘
-            │
-    ┌───────▼────────┐
-    │     Redis      │ ← Caching Layer
-    └────────────────┘
-            │
-    ┌───────▼────────┐
-    │   S3/LocalStack│ ← File Storage
-    └────────────────┘
+- Microservice decomposition with an API gateway and service-specific responsibilities
+- Mixed sync/async communication using HTTP and RabbitMQ
+- Database-per-service boundaries with shared platform libraries
+- Booking reliability patterns such as idempotency, seat locking, audit logs, and compensation events
+- Dev tooling for local containers, Swagger, health checks, tracing, and message-driven workflows
+
+## System Overview
+
+```text
+Client
+  |
+  v
+API Gateway (3000)
+  |
+  +--> Auth Service (3001)
+  +--> Flight Service (3002)
+  +--> Booking Service (3003)
+  +--> Notification Service (3004)
+  +--> Payment Service (3005)
+
+Shared infrastructure
+  - PostgreSQL
+  - Redis
+  - RabbitMQ
+  - LocalStack S3
+  - Tempo / Jaeger / Grafana
 ```
 
-```
-                        ┌──────────────────────────┐
-                        │        Clients           │
-                        │  (Web / Mobile / CLI)    │
-                        └─────────────┬────────────┘
-                                      │ HTTPS
-                        ┌─────────────▼────────────┐
-                        │   Ingress Controller     │
-                        │ (NGINX / Envoy / Kong*)  │
-                        │  TLS / Routing / WAF     │
-                        └─────────────┬────────────┘
-                                      │
-                        ┌─────────────▼────────────┐
-                        │        API Gateway        │
-                        │ (NestJS / Express – BFF) │
-                        │--------------------------│
-                        │ • Auth (JWT / RBAC)      │
-                        │ • Redis Rate Limiting    │
-                        │ • Request Validation     │
-                        │ • API Composition        │
-                        │ • Swagger Docs           │
-                        └─────────────┬────────────┘
-                                      │
-               ┌──────────────────────┼──────────────────────┐
-               │                      │                      │
-        ┌──────▼──────┐        ┌──────▼──────┐        ┌──────▼──────┐
-        │ Auth Service│        │ Flight       │        │ Booking     │
-        │             │        │ Service      │        │ Service     │
-        │ (JWT, Users)│        │ (Search)     │        │ (Orders)    │
-        └──────┬──────┘        └──────┬──────┘        └──────┬──────┘
-               │                      │                      │
-               └──────────────┬───────┴──────────────┬───────┘
-                              │
-                     ┌────────▼────────┐
-                     │   RabbitMQ       │
-                     │ (Async Events)   │
-                     └────────┬────────┘
-                              │
-                     ┌────────▼────────┐
-                     │ Notification    │
-                     │ Service         │
-                     └─────────────────┘
+## Services
 
-──────────────────────────────── DATA LAYER ────────────────────────────────
+| Service | Port | Responsibility |
+| --- | ---: | --- |
+| API Gateway | 3000 | Public HTTP entrypoint, auth, request validation, rate limiting, API composition |
+| Auth Service | 3001 | User authentication, JWT flows, refresh tokens, RBAC support |
+| Flight Service | 3002 | Flights, cities, airports, airplanes, seats, seat inventory changes |
+| Booking Service | 3003 | Booking lifecycle, saga orchestration, payment handoff, local payment fallback |
+| Notification Service | 3004 | Event-driven booking notifications |
+| Payment Service | 3005 | Payment intents, capture, refunds, ledgers, webhook handling |
 
-┌────────────────────┐   ┌────────────────────┐   ┌────────────────────┐
-│ Auth PostgreSQL    │   │ Flight PostgreSQL  │   │ Booking PostgreSQL │
-│ (isolated DB)     │   │ (isolated DB)      │   │ (isolated DB)      │
-└────────────────────┘   └────────────────────┘   └────────────────────┘
+## Shared Libraries
 
-┌──────────────────────────────────────────────────────────────────────────┐
-│ Redis Cluster                                                             │
-│ • Rate limiting (API Gateway)                                             │
-│ • Auth token blacklist / sessions                                         │
-│ • Caching (Flights, Bookings)                                             │
-│ • Idempotency keys (Booking)                                              │
-└──────────────────────────────────────────────────────────────────────────┘
+| Library | Purpose |
+| --- | --- |
+| `@app/common` | DTOs, decorators, filters, guards, interceptors, logging, Redis helpers |
+| `@app/database` | TypeORM setup and per-service data source configuration |
+| `@app/message-broker` | RabbitMQ integration helpers |
+| `@app/rate-limiter` | Shared rate limiting module and guard |
+| `@app/seat-lock` | Redis-backed distributed seat lock logic |
+| `@app/storage` | Storage abstraction for S3 / LocalStack |
+| `@app/telemetry` | OpenTelemetry bootstrap and tracing helpers |
 
-┌──────────────────────────────────────────────────────────────────────────┐
-│ S3 / LocalStack                                                           │
-│ • File uploads                                                            │
-│ • Invoices / Tickets                                                      │
-└──────────────────────────────────────────────────────────────────────────┘
+## Key Technical Patterns
 
-```
-## 🚀 Features
+- Database-per-service isolation
+- Event-driven workflows with RabbitMQ
+- Idempotency keys for payment and booking-sensitive flows
+- Redis-backed distributed locking for seat reservation windows
+- Audit logging and ledger tracking in the payment domain
+- OpenTelemetry tracing with Tempo and Jaeger
+- Docker Compose workflow for local infrastructure
 
-### Core Features
-- ✅ **Microservices Architecture** with RabbitMQ for async communication
-- ✅ **API Gateway** with centralized routing and authentication
-- ✅ **JWT Authentication** with access and refresh tokens
-- ✅ **Role-Based Access Control** (RBAC)
-- ✅ **Database-per-Service Pattern** with isolated PostgreSQL databases
-- ✅ **Redis** for caching, session management, and distributed locking
-- ✅ **S3-compatible storage** (AWS S3/LocalStack) with abstraction layer
-- ✅ **Event-driven architecture** with RabbitMQ message broker
-- ✅ **Request rate limiting** and throttling
-- ✅ **Input validation** and sanitization with class-validator
-- ✅ **Swagger API documentation** for all services
-- ✅ **Docker & Docker Compose** for containerized deployment
-- ✅ **Dependency Inversion** for easy provider switching
+## Local Development
 
-### Advanced Features
-- ✅ **Distributed Tracing** with OpenTelemetry, Tempo, and Jaeger
-- ✅ **Observability Stack** with Grafana for visualization
-- ✅ **Correlation ID Tracking** across all microservices
-- ✅ **Seat Locking Service** for handling concurrent bookings
-- ✅ **Global Exception Handling** with standardized error responses
-- ✅ **Response Wrapping Interceptors** for consistent API responses
-- ✅ **Metrics Collection** with custom interceptors
-- ✅ **Health Check Indicators** for RabbitMQ, Redis, and databases
-- ✅ **Idempotency Support** for critical booking operations
-- ✅ **Structured Logging** with Winston and correlation IDs
-- ✅ **Custom Decorators** for cleaner code (@User, @Roles, etc.)
-- ✅ **Middleware Chain** for request processing
-- ✅ **TypeORM Migrations** with idempotent patterns
+### Prerequisites
 
-### Shared Libraries (@app/*)
-- **@app/common** - Shared utilities, decorators, filters, guards, interceptors
-- **@app/database** - TypeORM configuration and data sources per service
-- **@app/message-broker** - RabbitMQ abstraction layer
-- **@app/storage** - S3/LocalStack storage abstraction
-- **@app/rate-limiter** - Custom rate limiting implementation
-- **@app/seat-lock** - Distributed seat locking for concurrent bookings
-- **@app/telemetry** - OpenTelemetry integration and tracing
+- Node.js 18+
+- npm
+- Docker Desktop or Docker Engine with Compose
+- AWS CLI if you want to create the LocalStack S3 bucket via script
 
-### Services
+### 1. Install dependencies
 
-#### 1. API Gateway (Port 3000)
-- HTTP REST API entry point
-- JWT authentication and authorization
-- Request routing to microservices
-- Rate limiting and throttling
-- Swagger documentation at `/api/docs`
-
-#### 2. Auth Service (Port 3001)
-- User registration and authentication
-- JWT token generation and validation
-- Password hashing with bcrypt
-- Refresh token mechanism
-- User profile management
-
-#### 3. Flight Service (Port 3002)
-- Flight CRUD operations
-- Flight search with filters
-- Seat availability management
-- Flight image upload to S3
-- Price management by class
-
-#### 4. Booking Service (Port 3003)
-- Booking creation and management
-- Payment intent creation via RabbitMQ (optional local fallback)
-- Booking cancellation
-- User booking history
-- Event emission for notifications
-
-#### 5. Notification Service (Port 3004)
-- Email notifications
-- SMS notifications (simulated)
-- Event-driven architecture
-- Booking confirmation emails
-- Cancellation notifications
-
-#### 6. Payment Service (Port 3005)
-- Payment intent creation and confirmation
-- Idempotency keys and audit logs
-- Refunds and ledger entries
-
-## 📊 Infrastructure Services
-
-### Core Infrastructure
-- **PostgreSQL** (Port 5432) - Separate databases: `auth_db`, `flight_db`, `booking_db`
-- **Redis** (Port 6379) - Caching, sessions, rate limiting, seat locks
-- **RabbitMQ** (Ports 5672, 15672) - Message broker for async communication
-- **LocalStack** (Port 4566) - S3-compatible storage for development
-
-### Observability Stack
-- **Tempo** (Ports 3200, 4317, 4318) - Distributed tracing backend
-- **Jaeger** (Ports 16686, 14268, 14250) - Alternative tracing UI
-- **Grafana** (Port 3005) - Visualization and monitoring dashboards
-
-### Access URLs
-```
-API Gateway:        http://localhost:3000
-Swagger Docs:       http://localhost:3000/api/docs
-RabbitMQ UI:        http://localhost:15672 (admin/admin)
-Jaeger UI:          http://localhost:16686
-Grafana:            http://localhost:3005
-Tempo:              http://localhost:3200
-```
-
-## 📋 Prerequisites
-
-- Node.js >= 18.x
-- Docker & Docker Compose
-- npm or yarn
-- AWS CLI (for LocalStack S3 setup)
-
-## 🛠️ Installation
-
-### 1. Clone the repository
-```bash
-git clone <repository-url>
-cd flight-booking
-```
-
-### 2. Install dependencies
 ```bash
 npm install
 ```
 
-### 3. Environment setup
+### 2. Start infrastructure
+
 ```bash
-cp .env.example .env
-# Edit .env with your configuration
+docker-compose up -d postgres redis rabbitmq localstack tempo jaeger grafana
 ```
 
-### 4. Start infrastructure services
-```bash
-docker-compose up -d postgres redis rabbitmq localstack
-```
+### 3. Create the local S3 bucket
 
-### 5. Create S3 bucket in LocalStack
 ```bash
 npm run setup:localstack
 ```
 
-### 6. Start all microservices
-```bash
-# Option 1: Start all services concurrently
-npm run start:all
+### 4. Start the services
 
-# Option 2: Start services individually
+Run everything:
+
+```bash
+npm run start:all
+```
+
+Or run only the service you need:
+
+```bash
 npm run start:api-gateway
 npm run start:auth
 npm run start:flight
@@ -256,7 +111,87 @@ npm run start:notification
 npm run start:payment
 ```
 
-## 🐳 Docker Deployment
+## Useful Commands
+
+```bash
+npm run build
+npm run lint:check
+npm test
+npm run test:e2e
+npm run docker:up
+npm run docker:down
+```
+
+## Local URLs
+
+| Tool | URL |
+| --- | --- |
+| API Gateway | `http://localhost:3000` |
+| Swagger Docs | `http://localhost:3000/api/docs` |
+| RabbitMQ UI | `http://localhost:15672` |
+| Jaeger UI | `http://localhost:16686` |
+| Grafana | `http://localhost:3006` |
+| Tempo | `http://localhost:3200` |
+| LocalStack | `http://localhost:4566` |
+
+RabbitMQ default credentials:
+
+```text
+username: admin
+password: admin
+```
+
+## Repository Layout
+
+```text
+apps/
+  api-gateway/
+  auth-service/
+  booking-service/
+  flight-service/
+  notification-service/
+  payment-service/
+libs/
+  common/
+  database/
+  message-broker/
+  rate-limiter/
+  seat-lock/
+  storage/
+  telemetry/
+docs/
+docker-compose.yml
+nest-cli.json
+```
+
+## Suggested Reviewer Walkthrough
+
+If you are evaluating the project, these are the fastest places to get signal:
+
+1. Start with `apps/api-gateway` to understand the public entrypoint.
+2. Open `apps/booking-service` to see orchestration and downstream coordination.
+3. Review `apps/payment-service` for idempotency, ledgering, refunds, and audit logging.
+4. Review `libs/seat-lock` for concurrency handling around seat reservation windows.
+5. Check `libs/telemetry` and `docker-compose.yml` for the observability setup.
+
+## Notes for Developers
+
+- Top-level `npm run build` targets the default Nest project defined in `nest-cli.json`.
+- Each service has its own `tsconfig.app.json` and can be started independently.
+- Some lint warnings still exist in older parts of the codebase, but the repo now builds cleanly and the root scripts point at real apps.
+- The payment service supports Stripe now and keeps a PayPal provider stub for future implementation.
+
+## Current Status
+
+This repository is a strong backend architecture project with practical patterns for:
+
+- service separation
+- async communication
+- infrastructure-backed local development
+- payment and booking reliability concerns
+- observability and operational thinking
+
+It is a good portfolio or interview project because it shows both application logic and platform engineering decisions in one codebase.
 
 ### Start all services with Docker Compose
 ```bash

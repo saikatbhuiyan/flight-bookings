@@ -63,4 +63,4 @@ async function bootstrap() {
   logger.log(`Auth Service HTTP server is running on port: ${port}`);
 }
 
-bootstrap();
+void bootstrap();

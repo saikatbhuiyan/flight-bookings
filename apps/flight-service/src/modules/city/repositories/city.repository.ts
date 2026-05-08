@@ -5,6 +5,8 @@ import { City } from '../../../entities/city.entity';
 import { QueryCityDto } from '../dto/query-city.dto';
 import { IBaseRepository } from 'apps/flight-service/src/common/interfaces/repository.interface';
 
+type CityWithAirportCount = City & { airportCount: number };
+
 @Injectable()
 export class CityRepository implements IBaseRepository<City> {
   private readonly logger = new Logger(CityRepository.name);
@@ -117,7 +119,11 @@ export class CityRepository implements IBaseRepository<City> {
     return this.repository.count({ where });
   }
 
-  async findWithAirportCount(skip: number, take: number, where?: FindOptionsWhere<City>): Promise<[any[], number]> {
+  async findWithAirportCount(
+    skip: number,
+    take: number,
+    where?: FindOptionsWhere<City>,
+  ): Promise<[CityWithAirportCount[], number]> {
     const query = this.repository
       .createQueryBuilder('city')
       .leftJoin('city.airports', 'airport')
@@ -145,10 +151,10 @@ export class CityRepository implements IBaseRepository<City> {
 
     const [results, total] = await query.getManyAndCount();
 
-    const transformedResults = results.map((city: any) => ({
+    const transformedResults = results.map((city) => ({
       ...city,
-      airportCount: parseInt(city.airportCount) || 0,
-    }));
+      airportCount: Number((city as City & { airportCount?: string | number }).airportCount || 0),
+    })) as CityWithAirportCount[];
 
     return [transformedResults, total];
   }

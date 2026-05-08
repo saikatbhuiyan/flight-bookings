@@ -69,4 +69,4 @@ async function bootstrap() {
   logger.log(`Booking Service HTTP server is running on port: ${port}`);
 }
 
-bootstrap();
+void bootstrap();

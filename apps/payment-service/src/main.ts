@@ -61,4 +61,4 @@ async function bootstrap() {
   logger.log(`Payment gateway: ${process.env.PAYMENT_GATEWAY || 'stripe'}`);
 }
 
-bootstrap();
+void bootstrap();

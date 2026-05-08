@@ -1,8 +1,9 @@
 {
   "collection": "@nestjs/schematics",
-  "sourceRoot": "apps",
+  "sourceRoot": "apps/api-gateway/src",
   "monorepo": true,
-  "root": "apps",
+  "root": "apps/api-gateway",
+  "defaultProject": "api-gateway",
   "compilerOptions": {
     "webpack": true,
     "tsConfigPath": "apps/api-gateway/tsconfig.app.json",
